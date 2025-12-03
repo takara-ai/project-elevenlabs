@@ -56,17 +56,18 @@ export default function Home() {
             {JSON.stringify(state, null, 2)}
           </pre>
         </div>
-
-        {showSplash && (
-          <SplashContainer onClick={handleDismissSplash}>
-            <div className="relative z-10 flex flex-col items-center gap-12">
-              <Title />
-              <Prompt>
-                {audioPlaying ? "Click anywhere to begin" : "Click to enable audio"}
-              </Prompt>
-            </div>
-          </SplashContainer>
-        )}
       </div>
-      );
+
+      {showSplash && (
+        <SplashContainer onClick={handleDismissSplash}>
+          <div className="relative z-10 flex flex-col items-center gap-12">
+            <Title />
+            <Prompt>
+              {audioPlaying ? "Click anywhere to begin" : "Click to enable audio"}
+            </Prompt>
+          </div>
+        </SplashContainer>
+      )}
+    </div>
+  );
 }
