@@ -23,6 +23,9 @@
 
 import { useGameStore, GamePhase, type StoryEntry, type ActionEntry } from '../state-management/states'
 import { generateStoryScenario } from '../story-generation/generate'
+import { STARTER_STORIES } from '../story-generation/data'
+import { generateSoundEffect } from '../sound-effects/generate'
+import { buildSoundstagePrompt } from '../sound-effects/prompts'
 
 const log = (action: string, data?: unknown) => {
   if (process.env.NODE_ENV === 'development') {
@@ -38,7 +41,26 @@ const getHistoryContext = () => {
   }))
 }
 
-async function generate() {
+/**
+ * Generate soundstage audio for the story setting
+ */
+async function loadSoundstage(setting: string): Promise<void> {
+  const store = useGameStore.getState()
+  store._setSoundstage(null, true)
+  
+  try {
+    const prompt = buildSoundstagePrompt(setting)
+    const result = await generateSoundEffect(prompt)
+    
+    log('soundstage', { url: result.blobUrl, cached: result.cached })
+    useGameStore.getState()._setSoundstage(result.blobUrl)
+  } catch (err) {
+    log('soundstage error', err)
+    useGameStore.getState()._setSoundstage(null, false)
+  }
+}
+
+async function generate(setPhase = true) {
   const store = useGameStore.getState()
   const { starterStoryId, customSetting, cycleIndex } = store
   
@@ -60,7 +82,7 @@ async function generate() {
     )
     
     log('generated', { narrativeText: narrativeText.slice(0, 50) + '...', actions, hasAudio: !!audioBase64 })
-    store._setStory(narrativeText, actions, audioBase64)
+    store._setStory(narrativeText, actions, audioBase64, setPhase)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Generation failed'
     log('error', message)
@@ -86,7 +108,24 @@ export const game = {
     // Restore pending values after reset
     store.setStarter(pendingStarter)
     store.setCustomSetting(pendingCustomSetting)
-    await generate()
+    
+    // Get the setting for soundstage
+    let setting: string
+    if (pendingStarter === 'custom') {
+      setting = pendingCustomSetting
+    } else {
+      const starter = STARTER_STORIES.find(s => s.id === pendingStarter)
+      setting = starter?.setting || ''
+    }
+    
+    // Generate story and soundstage in parallel (don't transition phase yet)
+    await Promise.all([
+      generate(false),
+      setting ? loadSoundstage(setting) : Promise.resolve(),
+    ])
+    
+    // Now that both are ready, transition to STORY phase
+    useGameStore.getState()._setPhase(GamePhase.STORY)
   },
 
   /**
