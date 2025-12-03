@@ -31,7 +31,7 @@ export function Floor() {
   return (
     <mesh ref={meshRef} receiveShadow>
       <planeGeometry args={[floorSize, floorSize]} />
-      <meshStandardMaterial color="#504040" roughness={0.8} metalness={0.1} />
+      <meshStandardMaterial color="#ffffff" roughness={0.8} metalness={0.1} />
     </mesh>
   );
 }

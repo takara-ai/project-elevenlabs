@@ -13,11 +13,7 @@ export default function Home() {
         <color attach="background" args={["#000000"]} />
         <Scene />
       </Canvas>
-      <div className="absolute top-20 left-0 w-full flex items-center justify-center pointer-events-none">
-        <h1 className="text-8xl font-display text-white relative drop-shadow-[0_0_40px_white]">
-          Story Line AI
-        </h1>
-      </div>
+
       <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
         <Button
           onClick={() => {

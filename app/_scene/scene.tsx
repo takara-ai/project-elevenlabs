@@ -10,21 +10,29 @@ import { DebugOverlay } from "./components/debug";
 import { Floor } from "./components/floor";
 import { CursorPosition } from "./components/cursor-position";
 import { Camera } from "./components/camera";
+import { Title3D } from "./components/title";
+import { Line000to0010 } from "./components/line";
 
 export function Scene() {
   // Leva controls for scene parameters
   const lighting = useControls("Lighting", {
-    ambientIntensity: { value: 1, min: 0, max: 5, step: 0.1 },
+    ambientIntensity: { value: 0, min: 0, max: 5, step: 0.1 },
     pointLightIntensity: { value: 5, min: 0, max: 20, step: 0.5 },
-    pointLightX: { value: 10, min: -50, max: 50, step: 1 },
-    pointLightY: { value: 10, min: -50, max: 50, step: 1 },
+    pointLightX: { value: 0, min: -50, max: 50, step: 1 },
+    pointLightY: { value: 5, min: -50, max: 50, step: 1 },
     pointLightZ: { value: 10, min: -50, max: 50, step: 1 },
+    pointLightColor: {
+      value: "#ead03e",
+      min: "#000000",
+      max: "#ffffff",
+      step: 0.01,
+    },
   });
 
   const bloom = useControls("Bloom", {
-    intensity: { value: 1.5, min: 0, max: 5, step: 0.1 },
-    threshold: { value: 0.9, min: 0, max: 2, step: 0.1 },
-    smoothing: { value: 0.9, min: 0, max: 2, step: 0.1 },
+    intensity: { value: 1, min: 0, max: 5, step: 0.1 },
+    threshold: { value: 0.5, min: 0, max: 2, step: 0.1 },
+    smoothing: { value: 1, min: 0, max: 2, step: 0.1 },
   });
 
   const character = useControls("Character", {
@@ -44,6 +52,7 @@ export function Scene() {
     <>
       <ambientLight intensity={lighting.ambientIntensity} />
       <Camera />
+      <Title3D />
       <Floor />
       <CursorPosition />
       <pointLight
@@ -52,9 +61,11 @@ export function Scene() {
           lighting.pointLightY,
           lighting.pointLightZ,
         ]}
+        color={lighting.pointLightColor}
         intensity={lighting.pointLightIntensity}
       />
       <RandomSpheres count={scene.randomSpheresCount} />
+      <Line000to0010 />
       <Character
         animationName={character.animation}
         animationSpeed={character.animationSpeed}

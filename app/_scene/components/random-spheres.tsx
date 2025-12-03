@@ -14,7 +14,7 @@ function generateRandomSpheres(count: number) {
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos(2 * Math.random() - 1);
     const x = r * Math.sin(phi) * Math.cos(theta);
-    const y = r * Math.sin(phi) * Math.sin(theta);
+    const y = Math.abs(r * Math.sin(phi) * Math.sin(theta));
     const z = r * Math.cos(phi);
     arr.push({
       key: i,
@@ -27,7 +27,7 @@ function generateRandomSpheres(count: number) {
 
 export function RandomSpheres({ count = 20 }: { count?: number }) {
   const { sphereRadius, sphereSegments } = useControls("Random Spheres", {
-    sphereRadius: { value: 0.25, min: 0.01, max: 2, step: 0.01 },
+    sphereRadius: { value: 0.1, min: 0.01, max: 2, step: 0.01 },
     sphereSegments: { value: 24, min: 4, max: 64, step: 1 },
   });
 
@@ -38,7 +38,9 @@ export function RandomSpheres({ count = 20 }: { count?: number }) {
     <>
       {spheres.map(({ key, position, color }) => (
         <mesh key={key} position={position as [number, number, number]}>
-          <sphereGeometry args={[sphereRadius, sphereSegments, sphereSegments]} />
+          <sphereGeometry
+            args={[sphereRadius, sphereSegments, sphereSegments]}
+          />
           <meshStandardMaterial color={color} />
         </mesh>
       ))}

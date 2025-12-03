@@ -21,6 +21,7 @@ export function CursorPosition() {
     indicatorRadius,
     indicatorSegments,
     indicatorEmissiveIntensity,
+    show,
   } = useControls("Cursor", {
     threshold: { value: 0.25, min: 0, max: 1, step: 0.01 },
     springStiffness: { value: 100, min: 0, max: 500, step: 1 },
@@ -29,6 +30,7 @@ export function CursorPosition() {
     indicatorRadius: { value: 0.1, min: 0.01, max: 1, step: 0.01 },
     indicatorSegments: { value: 16, min: 4, max: 32, step: 1 },
     indicatorEmissiveIntensity: { value: 0.5, min: 0, max: 2, step: 0.1 },
+    show: { value: false },
   });
 
   // Create motion values for raw cursor position
@@ -109,6 +111,7 @@ export function CursorPosition() {
   // Render a small ball at the hit position
   if (!hitPoint) return null;
 
+  if (!show) return null;
   return (
     <mesh position={[hitPoint.x, hitPoint.y, hitPoint.z]}>
       <sphereGeometry
