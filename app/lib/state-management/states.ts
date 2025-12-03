@@ -11,12 +11,19 @@ export const GamePhase = {
 
 export type GamePhaseType = (typeof GamePhase)[keyof typeof GamePhase];
 
+export interface Alignment {
+  characters: string[];
+  character_start_times_seconds: number[];
+  character_end_times_seconds: number[];
+}
+
 export interface StoryEntry {
   type: "story";
   id: string;
   narrativeText: string;
   actions: string[];
   audioBase64: string | null;
+  alignment: Alignment | null;
   timestamp: number;
 }
 
@@ -71,6 +78,7 @@ export interface GameActions {
     narrativeText: string,
     actions: string[],
     audioBase64: string | null,
+    alignment: Alignment | null,
     setPhase?: boolean
   ) => void;
   _addAction: (text: string, isCustom: boolean) => void;
@@ -99,6 +107,7 @@ const initialState: GameState = {
         "Year is 1692 - Investigate strange occurrences at Blackwood Estate in a fantasy world",
         "Year is 2193 - Survive aboard a malfunctioning space station in a post-apocalyptic world",
       ],
+      alignment: null,
       audioBase64: null,
       timestamp: new Date(0).getTime(),
     },
@@ -141,13 +150,20 @@ export const useGameStore = create<GameState & GameActions>()(
           "_setLoading"
         ),
 
-      _setStory: (narrativeText, actions, audioBase64, setPhase = true) => {
+      _setStory: (
+        narrativeText,
+        actions,
+        audioBase64,
+        alignment,
+        setPhase = true
+      ) => {
         const story: StoryEntry = {
           type: "story",
           id: generateId(),
           narrativeText,
           actions,
           audioBase64,
+          alignment,
           timestamp: Date.now(),
         };
         set(
