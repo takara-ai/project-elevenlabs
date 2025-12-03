@@ -12,9 +12,12 @@ export const useCursorStore = create<CursorState>((set) => ({
   worldY: 0,
   worldZ: 0,
   setWorldPosition: (x, y, z) =>
-    set(() => ({
-      worldX: x,
-      worldY: y,
-      worldZ: z,
-    })),
+    set(() => {
+      return {
+        worldX: x,
+        worldY: y,
+        worldZ: z,
+        isMakingChoice: false,
+      };
+    }),
 }));

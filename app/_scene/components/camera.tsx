@@ -5,10 +5,13 @@ import { useControls } from "leva";
 import * as React from "react";
 import * as THREE from "three";
 import { useMotionValue, useSpring } from "motion/react";
+import { useCameraStore } from "../store/camera";
 
 export function Camera() {
   const { camera, gl } = useThree();
   const cameraRef = React.useRef(camera);
+  // Subscribe to active effects to trigger re-renders when they change
+  const activeEffects = useCameraStore((state) => state.activeEffects);
 
   const controls = useControls("Camera", {
     position: { value: [0, 5, 4], min: -50, max: 50, step: 0.1 },
@@ -31,14 +34,54 @@ export function Camera() {
     mass: controls.springMass,
   });
 
-  // Initialize targetZ only once on mount
+  // Motion value for target x position (for centering on targets)
+  const targetX = useMotionValue(controls.position[0]);
+  const smoothX = useSpring(targetX, {
+    stiffness: controls.springStiffness / 2,
+    damping: controls.springDamping * 2,
+    mass: controls.springMass,
+  });
+
+  // Motion value for smooth zoom
+  const targetZoom = useMotionValue(controls.zoom);
+  const smoothZoom = useSpring(targetZoom, {
+    stiffness: controls.springStiffness,
+    damping: controls.springDamping,
+    mass: controls.springMass,
+  });
+
+  // Initialize targetZ and targetX only once on mount
   const hasInitialized = React.useRef(false);
   React.useEffect(() => {
     if (!hasInitialized.current) {
       targetZ.set(controls.position[2]);
+      targetX.set(controls.position[0]);
+      targetZoom.set(controls.zoom);
       hasInitialized.current = true;
     }
-  }, [targetZ, controls.position]);
+  }, [targetZ, targetX, targetZoom, controls.position, controls.zoom]);
+
+  // Update zoom and position based on camera store effects
+  React.useEffect(() => {
+    const topEffect =
+      activeEffects.length > 0 ? activeEffects[activeEffects.length - 1] : null;
+
+    // Update zoom
+    const effectZoom = topEffect?.zoom;
+    const targetZoomValue =
+      effectZoom !== undefined ? effectZoom : controls.zoom;
+    targetZoom.set(targetZoomValue);
+
+    // Update X position to center on target
+    const effectTargetPosition = topEffect?.targetPosition;
+    if (effectTargetPosition) {
+      // Center camera X on the target position
+      targetX.set(effectTargetPosition[0]);
+    } else {
+      // Return to default X position
+      targetX.set(controls.position[0]);
+    }
+  }, [activeEffects, controls.zoom, controls.position, targetZoom, targetX]);
 
   // Handle scroll wheel
   React.useEffect(() => {
@@ -57,11 +100,14 @@ export function Camera() {
     };
   }, [gl.domElement, targetZ, controls.scrollSpeed]);
 
-  // Update camera z position with smooth motion
+  // Update camera position and zoom with smooth motion
   useFrame(() => {
     if (cameraRef.current) {
       const cam = cameraRef.current as THREE.PerspectiveCamera;
+      cam.position.x = smoothX.get();
       cam.position.z = smoothZ.get();
+      cam.zoom = smoothZoom.get();
+      cam.updateProjectionMatrix();
     }
   });
 
@@ -70,12 +116,8 @@ export function Camera() {
     if (cameraRef.current) {
       const cam = cameraRef.current as THREE.PerspectiveCamera;
 
-      // Update position (x and y from controls, z from smooth scroll)
-      cam.position.set(
-        controls.position[0],
-        controls.position[1],
-        smoothZ.get()
-      );
+      // Update position (x from smooth targeting, y from controls, z from smooth scroll)
+      cam.position.set(smoothX.get(), controls.position[1], smoothZ.get());
 
       // Update rotation
       cam.rotation.set(
@@ -90,16 +132,12 @@ export function Camera() {
         cam.updateProjectionMatrix();
       }
 
-      // Update zoom
-      cam.zoom = controls.zoom;
-      cam.updateProjectionMatrix();
-
       // Update near and far planes
       cam.near = controls.near;
       cam.far = controls.far;
       cam.updateProjectionMatrix();
     }
-  }, [controls, camera, smoothZ]);
+  }, [controls, camera, smoothZ, smoothX]);
 
   // Keep camera ref in sync
   React.useEffect(() => {

@@ -9,12 +9,12 @@ export function Title3D() {
       position={[0, 0.01, 0]}
       rotation={[-Math.PI / 2, 0, 0]}
       font="/black-vesper.ttf"
-      fontSize={1}
+      fontSize={1.5}
       color="#fff"
       anchorX="center"
       anchorY="middle"
     >
-      Story Line AI
+      HANASHI
     </Text>
   );
 }
