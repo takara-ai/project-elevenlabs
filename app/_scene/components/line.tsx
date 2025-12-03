@@ -1,6 +1,10 @@
 import { Line } from "@react-three/drei";
 import * as React from "react";
 import * as THREE from "three";
+
+const LINE_WIDTH = 0.11;
+const Y_SCALE = 1;
+
 export function StraitLine({
   start,
   end,
@@ -10,10 +14,11 @@ export function StraitLine({
 }) {
   return (
     <Line
-      scale={[1, 1, 1]}
+      scale={[1, Y_SCALE, 1]}
       points={[start, end]}
       color="white"
-      lineWidth={22}
+      worldUnits
+      lineWidth={LINE_WIDTH}
       renderOrder={2}
     />
   );
@@ -78,47 +83,25 @@ export function CurverLine({
     const curvePoints = curve.getPoints(segments);
     return curvePoints.map((p) => [p.x, p.y, p.z] as [number, number, number]);
   }, [start, end, controlPoints, segments, curveType]);
-
-  // Use polygonOffset to push disabled lines back in depth buffer
-  const lineRef = React.useCallback(
-    (node: THREE.Object3D | null) => {
-      if (node && disabled) {
-        // Access the material through the drei Line component's internal structure
-        // The Line component wraps a mesh, so we need to traverse to find the material
-        node.traverse((child: THREE.Object3D) => {
-          const mesh = child as THREE.Mesh;
-          if (mesh.material) {
-            const material = Array.isArray(mesh.material)
-              ? mesh.material[0]
-              : mesh.material;
-            material.polygonOffset = true;
-            material.polygonOffsetFactor = 1;
-            material.polygonOffsetUnits = 1;
-          }
-        });
-      }
-    },
-    [disabled]
-  );
-
   if (disabled) {
     return (
       <Line
-        ref={lineRef}
-        scale={[1, 1, 1]}
+        scale={[1, Y_SCALE, 1]}
         points={points}
+        worldUnits
         color={"gray"}
-        lineWidth={22}
+        lineWidth={LINE_WIDTH}
         renderOrder={1}
       />
     );
   } else {
     return (
       <Line
-        scale={[1, 1, 1]}
+        scale={[1, Y_SCALE, 1]}
         points={points}
+        worldUnits
         color={"white"}
-        lineWidth={22}
+        lineWidth={LINE_WIDTH}
         renderOrder={2}
       />
     );
