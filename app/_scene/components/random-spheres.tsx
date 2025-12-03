@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useControls } from "leva";
 
 function generateRandomSpheres(count: number) {
   // Only generate ONCE, so the positions/colors remain stable across renders.
@@ -25,6 +26,11 @@ function generateRandomSpheres(count: number) {
 }
 
 export function RandomSpheres({ count = 20 }: { count?: number }) {
+  const { sphereRadius, sphereSegments } = useControls("Random Spheres", {
+    sphereRadius: { value: 0.25, min: 0.01, max: 2, step: 0.01 },
+    sphereSegments: { value: 24, min: 4, max: 64, step: 1 },
+  });
+
   // Stable random spheres using useMemo, so random is only called on first mount.
   const spheres = useMemo(() => generateRandomSpheres(count), [count]);
 
@@ -32,7 +38,7 @@ export function RandomSpheres({ count = 20 }: { count?: number }) {
     <>
       {spheres.map(({ key, position, color }) => (
         <mesh key={key} position={position as [number, number, number]}>
-          <sphereGeometry args={[0.25, 24, 24]} />
+          <sphereGeometry args={[sphereRadius, sphereSegments, sphereSegments]} />
           <meshStandardMaterial color={color} />
         </mesh>
       ))}

@@ -4,21 +4,12 @@ import { Canvas } from "@react-three/fiber";
 import { Scene } from "./_scene/scene";
 import { useGameStore } from "./lib/state-management/states";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
 import { game } from "./lib/game/controller";
-
 export default function Home() {
   const state = useGameStore();
-  useEffect(() => {
-    game.start();
-  }, []);
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
-      <Canvas
-        className="h-full w-full"
-        gl={{ alpha: false }}
-        camera={{ position: [0, 0, 5] }}
-      >
+      <Canvas className="h-full w-full">
         <color attach="background" args={["#000000"]} />
         <Scene />
       </Canvas>
@@ -27,7 +18,7 @@ export default function Home() {
           Story Line AI
         </h1>
       </div>
-      <pre className="absolute bottom-0 left-0 p-4 bg-black/50 text-white">
+      <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
         <Button
           onClick={() => {
             game.start();
@@ -35,8 +26,10 @@ export default function Home() {
         >
           start
         </Button>
-        {JSON.stringify(state, null, 2)}
-      </pre>
+        <pre className="p-4 bg-black/50 text-white">
+          {JSON.stringify(state, null, 2)}
+        </pre>
+      </div>
     </div>
   );
 }
