@@ -3,7 +3,7 @@ import { devtools } from 'zustand/middleware'
 
 export const GamePhase = {
   IDLE: 'idle',
-  INTRO_ACTION: 'intro',
+  INTRO: 'intro',
   LOADING: 'loading',
   STORY: 'story',
   ACTION: 'action',
@@ -11,16 +11,15 @@ export const GamePhase = {
 
 export type GamePhaseType = typeof GamePhase[keyof typeof GamePhase]
 
-// Story entry - narrator text + available actions
 export interface StoryEntry {
   type: 'story'
   id: string
   narrativeText: string
   actions: string[]
+  audioBase64: string | null
   timestamp: number
 }
 
-// Action entry - what the player did
 export interface ActionEntry {
   type: 'action'
   id: string
@@ -31,37 +30,58 @@ export interface ActionEntry {
 
 export type HistoryEntry = StoryEntry | ActionEntry
 
-interface GameState {
-  storyId: string | null
+export interface GameState {
+  // Core game state
+  sessionId: string | null
   phase: GamePhaseType
   cycleIndex: number
+  starterStoryId: string | null
+  customSetting: string | null
   currentStory: StoryEntry | null
   history: HistoryEntry[]
   loadingProgress: number
   error: string | null
+  
+  // UI state
+  isGenerating: boolean
+  pendingStarter: string | null
+  pendingCustomSetting: string
+  customActionInput: string
 }
 
-interface GameActions {
-  startGame: (storyId?: string) => void
-  completeIntro: () => void
-  setLoadingProgress: (progress: number) => void
-  completeLoading: (narrativeText: string, actions: string[]) => void
-  proceedToAction: () => void
-  submitAction: (text: string, isCustom?: boolean) => void
-  resetGame: () => void
-  setError: (error: string | null) => void
+export interface GameActions {
+  // UI actions
+  setStarter: (id: string | null) => void
+  setCustomSetting: (text: string) => void
+  setCustomActionInput: (text: string) => void
+  
+  // Internal actions - use GameController instead
+  _setPhase: (phase: GamePhaseType) => void
+  _setGenerating: (isGenerating: boolean) => void
+  _setLoading: (progress: number) => void
+  _setStory: (narrativeText: string, actions: string[], audioBase64: string | null) => void
+  _addAction: (text: string, isCustom: boolean) => void
+  _setConfig: (starterStoryId: string, customSetting?: string) => void
+  _setError: (error: string | null) => void
+  _reset: () => void
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15)
 
 const initialState: GameState = {
-  storyId: null,
+  sessionId: null,
   phase: GamePhase.IDLE,
   cycleIndex: 0,
+  starterStoryId: null,
+  customSetting: null,
   currentStory: null,
   history: [],
   loadingProgress: 0,
   error: null,
+  isGenerating: false,
+  pendingStarter: null,
+  pendingCustomSetting: '',
+  customActionInput: '',
 }
 
 export const useGameStore = create<GameState & GameActions>()(
@@ -69,27 +89,26 @@ export const useGameStore = create<GameState & GameActions>()(
     (set, get) => ({
       ...initialState,
 
-      startGame: (storyId) => set({
-        ...initialState,
-        storyId: storyId || generateId(),
-        phase: GamePhase.INTRO_ACTION,
-      }, false, 'startGame'),
+      // UI actions
+      setStarter: (id) => set({ pendingStarter: id }, false, 'setStarter'),
+      setCustomSetting: (text) => set({ pendingCustomSetting: text }, false, 'setCustomSetting'),
+      setCustomActionInput: (text) => set({ customActionInput: text }, false, 'setCustomActionInput'),
 
-      completeIntro: () => set({
-        phase: GamePhase.LOADING,
-        loadingProgress: 0,
-      }, false, 'completeIntro'),
+      // Internal actions
+      _setPhase: (phase) => set({ phase }, false, '_setPhase'),
+      _setGenerating: (isGenerating) => set({ isGenerating }, false, '_setGenerating'),
 
-      setLoadingProgress: (progress) => set({
+      _setLoading: (progress) => set({
         loadingProgress: Math.min(100, Math.max(0, progress))
-      }, false, 'setLoadingProgress'),
+      }, false, '_setLoading'),
 
-      completeLoading: (narrativeText, actions) => {
+      _setStory: (narrativeText, actions, audioBase64) => {
         const story: StoryEntry = {
           type: 'story',
           id: generateId(),
           narrativeText,
           actions,
+          audioBase64,
           timestamp: Date.now(),
         }
         set({
@@ -97,12 +116,10 @@ export const useGameStore = create<GameState & GameActions>()(
           currentStory: story,
           history: [...get().history, story],
           loadingProgress: 100,
-        }, false, 'completeLoading')
+        }, false, '_setStory')
       },
 
-      proceedToAction: () => set({ phase: GamePhase.ACTION }, false, 'proceedToAction'),
-
-      submitAction: (text, isCustom = false) => {
+      _addAction: (text, isCustom) => {
         const action: ActionEntry = {
           type: 'action',
           id: generateId(),
@@ -116,18 +133,29 @@ export const useGameStore = create<GameState & GameActions>()(
           history: [...get().history, action],
           loadingProgress: 0,
           currentStory: null,
-        }, false, 'submitAction')
+          customActionInput: '',
+        }, false, '_addAction')
       },
 
-      resetGame: () => set(initialState, false, 'resetGame'),
+      _setConfig: (starterStoryId, customSetting) => set({
+        sessionId: generateId(),
+        starterStoryId,
+        customSetting: customSetting || null,
+        phase: GamePhase.LOADING,
+        loadingProgress: 0,
+      }, false, '_setConfig'),
 
-      setError: (error) => set({ error }, false, 'setError'),
+      _setError: (error) => set({ error }, false, '_setError'),
+
+      _reset: () => set(initialState, false, '_reset'),
     }),
     { name: 'game-store' }
   )
 )
 
-// Selectors
-export const selectIsPlaying = (state: GameState) => state.phase !== GamePhase.IDLE
-export const selectIsLoading = (state: GameState) => state.phase === GamePhase.LOADING
-export const selectCanAct = (state: GameState) => state.phase === GamePhase.ACTION
+// Selectors - only primitives/booleans to avoid reference issues
+export const selectIsPlaying = (s: GameState) => s.phase !== GamePhase.IDLE
+export const selectIsLoading = (s: GameState) => s.phase === GamePhase.LOADING
+export const selectCanAct = (s: GameState) => s.phase === GamePhase.ACTION
+export const selectCanStart = (s: GameState) => 
+  s.pendingStarter !== null && (s.pendingStarter !== 'custom' || s.pendingCustomSetting.trim() !== '')

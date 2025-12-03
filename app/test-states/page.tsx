@@ -1,59 +1,45 @@
 'use client'
 
-import { useState } from 'react'
 import {
+  game,
   useGameStore,
   GamePhase,
+  STARTER_STORIES,
+  selectCanStart,
   type StoryEntry,
   type ActionEntry,
   type HistoryEntry,
-} from '@/app/lib/state-management/states'
-import { STARTER_STORIES } from '@/app/lib/story-generation/data'
-import { generateStoryScenario } from '@/app/lib/story-generation/generate'
+} from '@/app/lib/game'
 
 export default function TestStatesPage() {
-  const store = useGameStore()
-  const [customActionText, setCustomActionText] = useState('')
-  const [customSetting, setCustomSetting] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [selectedStarter, setSelectedStarter] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // Primitives - safe to select directly
+  const phase = useGameStore(s => s.phase)
+  const cycleIndex = useGameStore(s => s.cycleIndex)
+  const sessionId = useGameStore(s => s.sessionId)
+  const loadingProgress = useGameStore(s => s.loadingProgress)
+  const error = useGameStore(s => s.error)
+  const isGenerating = useGameStore(s => s.isGenerating)
+  const pendingStarter = useGameStore(s => s.pendingStarter)
+  const pendingCustomSetting = useGameStore(s => s.pendingCustomSetting)
+  const customActionInput = useGameStore(s => s.customActionInput)
+  const canStart = useGameStore(selectCanStart)
 
-  const canBegin = selectedStarter && (selectedStarter !== 'custom' || customSetting.trim())
+  // Objects - select the reference, access properties in render
+  const currentStory = useGameStore(s => s.currentStory)
+  const history = useGameStore(s => s.history)
 
-  const runGeneration = async () => {
-    if (!selectedStarter) return
-    setLoading(true)
-    setError(null)
-    store.setLoadingProgress(30)
-
-    try {
-      const history = store.history.map(h => ({
-        text: h.type === 'story' ? (h as StoryEntry).narrativeText : (h as ActionEntry).text,
-        type: h.type,
-      }))
-      store.setLoadingProgress(60)
-      const { narrativeText, actions } = await generateStoryScenario(
-        selectedStarter,
-        history,
-        store.cycleIndex,
-        selectedStarter === 'custom' ? customSetting : undefined
-      )
-      store.completeLoading(narrativeText, actions)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generation failed')
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Actions
+  const setStarter = useGameStore(s => s.setStarter)
+  const setCustomSetting = useGameStore(s => s.setCustomSetting)
+  const setCustomActionInput = useGameStore(s => s.setCustomActionInput)
 
   const phaseColor = {
     [GamePhase.IDLE]: 'bg-zinc-800',
-    [GamePhase.INTRO_ACTION]: 'bg-amber-900',
+    [GamePhase.INTRO]: 'bg-amber-900',
     [GamePhase.LOADING]: 'bg-blue-900',
     [GamePhase.STORY]: 'bg-emerald-900',
     [GamePhase.ACTION]: 'bg-purple-900',
-  }[store.phase]
+  }[phase]
 
   const renderEntry = (entry: HistoryEntry, i: number) => {
     if (entry.type === 'story') {
@@ -76,125 +62,141 @@ export default function TestStatesPage() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">State Management Test</h1>
-          <p className="text-zinc-500 mt-1">Play through the game loop</p>
+          <h1 className="text-2xl font-bold tracking-tight">Game Controller Test</h1>
+          <p className="text-zinc-500 mt-1">All state via Zustand</p>
         </div>
 
         <div className={`rounded-lg p-6 transition-colors ${phaseColor}`}>
           <div className="grid grid-cols-4 gap-4 text-center">
-            <div><div className="text-xs text-zinc-400">Phase</div><div className="text-xl font-mono font-bold">{store.phase}</div></div>
-            <div><div className="text-xs text-zinc-400">Cycle</div><div className="text-xl font-mono font-bold">{store.cycleIndex}</div></div>
-            <div><div className="text-xs text-zinc-400">ID</div><div className="text-xl font-mono font-bold">{store.storyId?.slice(0, 8) || '-'}</div></div>
-            <div><div className="text-xs text-zinc-400">History</div><div className="text-xl font-mono font-bold">{store.history.length}</div></div>
+            <div><div className="text-xs text-zinc-400">Phase</div><div className="text-xl font-mono font-bold">{phase}</div></div>
+            <div><div className="text-xs text-zinc-400">Cycle</div><div className="text-xl font-mono font-bold">{cycleIndex}</div></div>
+            <div><div className="text-xs text-zinc-400">Session</div><div className="text-xl font-mono font-bold">{sessionId?.slice(0, 8) || '-'}</div></div>
+            <div><div className="text-xs text-zinc-400">History</div><div className="text-xl font-mono font-bold">{history.length}</div></div>
           </div>
-          {store.phase === GamePhase.LOADING && (
+          {phase === GamePhase.LOADING && (
             <div className="mt-4 h-2 bg-zinc-700 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 transition-all" style={{ width: `${store.loadingProgress}%` }} />
+              <div className="h-full bg-blue-500 transition-all" style={{ width: `${loadingProgress}%` }} />
             </div>
+          )}
+          {error && (
+            <div className="mt-4 text-red-400 text-sm bg-red-950/50 p-2 rounded">{error}</div>
           )}
         </div>
 
         <div className="border border-zinc-800 rounded-lg p-6 space-y-4">
-          <h2 className="text-lg font-semibold">Actions</h2>
+          <h2 className="text-lg font-semibold">Controls</h2>
 
-          {store.phase === GamePhase.IDLE && (
-            <button onClick={() => store.startGame()} className="w-full py-3 bg-amber-600 hover:bg-amber-500 rounded font-medium">
-              Start Game
-            </button>
-          )}
-
-          {store.phase === GamePhase.INTRO_ACTION && (
+          {/* IDLE - Select story */}
+          {phase === GamePhase.IDLE && (
             <div className="space-y-4">
               <div className="grid gap-3">
                 {STARTER_STORIES.map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => setSelectedStarter(s.id)}
-                    className={`p-4 rounded-lg text-left border ${selectedStarter === s.id ? 'border-amber-500 bg-amber-950/50' : 'border-zinc-700 bg-zinc-900 hover:border-zinc-500'}`}
+                    onClick={() => setStarter(s.id)}
+                    className={`p-4 rounded-lg text-left border ${pendingStarter === s.id ? 'border-amber-500 bg-amber-950/50' : 'border-zinc-700 bg-zinc-900 hover:border-zinc-500'}`}
                   >
                     <div className="font-semibold">{s.title}</div>
                     <div className="text-sm text-zinc-400">{s.description}</div>
                   </button>
                 ))}
               </div>
-              {selectedStarter === 'custom' && (
+              {pendingStarter === 'custom' && (
                 <textarea
-                  value={customSetting}
+                  value={pendingCustomSetting}
                   onChange={(e) => setCustomSetting(e.target.value)}
-                  placeholder="Describe your story setting... (e.g., 'A medieval kingdom where magic is forbidden. You are a secret mage.')"
+                  placeholder="Describe your story setting..."
                   className="w-full h-24 px-4 py-3 bg-zinc-900 border border-zinc-700 rounded resize-none focus:outline-none focus:border-amber-500"
                 />
               )}
-              <button onClick={() => store.completeIntro()} disabled={!canBegin} className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 rounded font-medium">
-                Begin Adventure
+              <button onClick={() => game.start()} disabled={!canStart || isGenerating} className="w-full py-3 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 rounded font-medium">
+                {isGenerating ? 'Starting...' : 'game.start()'}
               </button>
             </div>
           )}
 
-          {store.phase === GamePhase.LOADING && (
-            <div className="space-y-2">
-              <button onClick={runGeneration} disabled={loading} className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-700 rounded font-medium">
-                {loading ? 'Generating...' : 'Generate Scene'}
-              </button>
-              {error && <div className="text-red-400 text-sm bg-red-950/50 p-2 rounded">{error}</div>}
-            </div>
-          )}
-
-          {store.phase === GamePhase.STORY && store.currentStory && (
+          {/* STORY - Read and proceed */}
+          {phase === GamePhase.STORY && currentStory && (
             <div className="space-y-4">
               <div className="bg-zinc-900 rounded p-4">
-                <p className="text-zinc-200">{store.currentStory.narrativeText}</p>
+                <p className="text-zinc-200 whitespace-pre-wrap">{currentStory.narrativeText}</p>
+                {currentStory.audioBase64 && (
+                  <audio
+                    autoPlay
+                    controls
+                    className="w-full mt-4"
+                    src={`data:audio/mpeg;base64,${currentStory.audioBase64}`}
+                  />
+                )}
               </div>
-              <button onClick={() => store.proceedToAction()} className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded font-medium">
-                Proceed to Action
+              <button onClick={() => game.ready()} className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded font-medium">
+                game.ready()
               </button>
             </div>
           )}
 
-          {store.phase === GamePhase.ACTION && store.currentStory && (
+          {/* ACTION - Choose or custom */}
+          {phase === GamePhase.ACTION && currentStory && (
             <div className="space-y-4">
               <div className="space-y-2">
-                {store.currentStory.actions.map((action, i) => (
-                  <button key={i} onClick={() => store.submitAction(action)} className="w-full py-2 px-4 bg-zinc-800 hover:bg-purple-800 rounded text-left">
+                {currentStory.actions.map((action, i) => (
+                  <button key={i} onClick={() => game.act(action)} disabled={isGenerating} className="w-full py-2 px-4 bg-zinc-800 hover:bg-purple-800 disabled:opacity-50 rounded text-left">
                     {action}
                   </button>
                 ))}
               </div>
               <div className="border-t border-zinc-800 pt-4 flex gap-2">
                 <input
-                  value={customActionText}
-                  onChange={(e) => setCustomActionText(e.target.value)}
+                  value={customActionInput}
+                  onChange={(e) => setCustomActionInput(e.target.value)}
                   placeholder="Custom action..."
                   className="flex-1 px-4 py-2 bg-zinc-900 border border-zinc-700 rounded focus:outline-none focus:border-purple-500"
                 />
                 <button
-                  onClick={() => { store.submitAction(customActionText.trim(), true); setCustomActionText('') }}
-                  disabled={!customActionText.trim()}
+                  onClick={() => game.actCustom()}
+                  disabled={!customActionInput.trim() || isGenerating}
                   className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-700 rounded font-medium"
                 >
-                  Submit
+                  game.actCustom()
                 </button>
               </div>
             </div>
           )}
 
-          {store.phase !== GamePhase.IDLE && (
-            <button onClick={() => { store.resetGame(); setSelectedStarter(null); setCustomSetting(''); setError(null) }} className="w-full py-2 bg-red-900 hover:bg-red-800 rounded text-sm mt-4">
-              Reset
+          {/* LOADING */}
+          {phase === GamePhase.LOADING && (
+            <div className="text-center text-zinc-400 py-4">Generating...</div>
+          )}
+
+          {/* Reset */}
+          {phase !== GamePhase.IDLE && (
+            <button onClick={() => game.reset()} className="w-full py-2 bg-red-900 hover:bg-red-800 rounded text-sm mt-4">
+              game.reset()
             </button>
           )}
         </div>
 
-        {store.history.length > 0 && (
+        {/* History */}
+        {history.length > 0 && (
           <div className="border border-zinc-800 rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">History</h2>
-            <div className="space-y-2 max-h-96 overflow-y-auto">{store.history.map(renderEntry)}</div>
+            <div className="space-y-2 max-h-96 overflow-y-auto">{history.map(renderEntry)}</div>
           </div>
         )}
 
+        {/* Debug */}
         <details className="border border-zinc-800 rounded-lg">
           <summary className="p-4 cursor-pointer text-zinc-500 hover:text-zinc-300">Raw State</summary>
-          <pre className="p-4 pt-0 text-xs text-zinc-400 overflow-auto">{JSON.stringify(store, null, 2)}</pre>
+          <pre className="p-4 pt-0 text-xs text-zinc-400 overflow-auto">{JSON.stringify({
+            sessionId,
+            phase,
+            cycleIndex,
+            pendingStarter,
+            currentStory,
+            history,
+            isGenerating,
+            error,
+          }, null, 2)}</pre>
         </details>
       </div>
     </div>

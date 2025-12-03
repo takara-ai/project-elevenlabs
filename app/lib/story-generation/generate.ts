@@ -1,7 +1,8 @@
 'use server'
 
 import { anthropic } from '@ai-sdk/anthropic'
-import { generateObject } from 'ai'
+import { elevenlabs } from '@ai-sdk/elevenlabs'
+import { generateObject, experimental_generateSpeech as generateSpeech } from 'ai'
 import { z } from 'zod'
 import { STARTER_STORIES } from './data'
 import { buildNarratorMessages } from './prompts'
@@ -11,7 +12,11 @@ const StorySchema = z.object({
   actions: z.array(z.string()).length(3).describe('3 action choices'),
 })
 
-export type GeneratedStory = z.infer<typeof StorySchema>
+export interface GeneratedStory {
+  narrativeText: string
+  actions: string[]
+  audioBase64: string | null
+}
 
 export async function generateStoryScenario(
   starterStoryId: string,
@@ -30,11 +35,32 @@ export async function generateStoryScenario(
     setting = starter.setting
   }
 
+  // Generate story text
   const { object } = await generateObject({
     model: anthropic('claude-3-5-haiku-latest'),
     schema: StorySchema,
     messages: buildNarratorMessages(setting, history, cycleIndex === 0),
   })
 
-  return object
+  // Generate narration audio
+  let audioBase64: string | null = null
+  try {
+    const speech = await generateSpeech({
+      model: elevenlabs.speech('eleven_v3'),
+      text: object.narrativeText,
+      voice: 'AeRdCCKzvd23BpJoofzx',
+    })
+    
+    // speech.audio is a GeneratedAudioFile with uint8Array property
+    const buffer = Buffer.from(speech.audio.uint8Array)
+    audioBase64 = buffer.toString('base64')
+  } catch (err) {
+    console.error('[Speech] Failed to generate audio:', err)
+  }
+
+  return {
+    narrativeText: object.narrativeText,
+    actions: object.actions,
+    audioBase64,
+  }
 }
