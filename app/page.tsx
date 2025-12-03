@@ -2,8 +2,10 @@
 
 import { Canvas } from "@react-three/fiber";
 import { Scene } from "./_scene/scene";
+import { useGameStore } from "./lib/state-management/states";
 
 export default function Home() {
+  const state = useGameStore();
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
       <Canvas
