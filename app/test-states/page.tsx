@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { game } from "../lib/game/controller";
 import {
   useGameStore,
@@ -23,6 +24,8 @@ export default function TestStatesPage() {
   const pendingCustomSetting = useGameStore((s) => s.pendingCustomSetting);
   const customActionInput = useGameStore((s) => s.customActionInput);
   const canStart = useGameStore(selectCanStart);
+  const soundstageUrl = useGameStore((s) => s.soundstageUrl);
+  const soundstageLoading = useGameStore((s) => s.soundstageLoading);
 
   // Objects - select the reference, access properties in render
   const currentStory = useGameStore((s) => s.currentStory);
@@ -32,6 +35,41 @@ export default function TestStatesPage() {
   const setStarter = useGameStore((s) => s.setStarter);
   const setCustomSetting = useGameStore((s) => s.setCustomSetting);
   const setCustomActionInput = useGameStore((s) => s.setCustomActionInput);
+
+  // Soundstage audio
+  const soundstageRef = useRef<HTMLAudioElement | null>(null);
+  const [soundstagePlaying, setSoundstagePlaying] = useState(false);
+
+  // Play soundstage when story starts and URL is available
+  useEffect(() => {
+    if (phase === GamePhase.STORY && soundstageUrl && !soundstagePlaying) {
+      const audio = new Audio(soundstageUrl);
+      audio.loop = true;
+      audio.volume = 0.25;
+      soundstageRef.current = audio;
+      audio
+        .play()
+        .then(() => setSoundstagePlaying(true))
+        .catch(console.error);
+    }
+
+    // Stop soundstage when returning to idle
+    if (phase === GamePhase.IDLE && soundstageRef.current) {
+      soundstageRef.current.pause();
+      soundstageRef.current = null;
+      setSoundstagePlaying(false);
+    }
+  }, [phase, soundstageUrl, soundstagePlaying]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (soundstageRef.current) {
+        soundstageRef.current.pause();
+        soundstageRef.current = null;
+      }
+    };
+  }, []);
 
   const phaseColor = {
     [GamePhase.IDLE]: "bg-zinc-800",
@@ -79,7 +117,7 @@ export default function TestStatesPage() {
         </div>
 
         <div className={`rounded-lg p-6 transition-colors ${phaseColor}`}>
-          <div className="grid grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-5 gap-4 text-center">
             <div>
               <div className="text-xs text-zinc-400">Phase</div>
               <div className="text-xl font-mono font-bold">{phase}</div>
@@ -96,8 +134,18 @@ export default function TestStatesPage() {
             </div>
             <div>
               <div className="text-xs text-zinc-400">History</div>
+              <div className="text-xl font-mono font-bold">{history.length}</div>
+            </div>
+            <div>
+              <div className="text-xs text-zinc-400">Soundstage</div>
               <div className="text-xl font-mono font-bold">
-                {history.length}
+                {soundstageLoading
+                  ? "..."
+                  : soundstagePlaying
+                    ? "ON"
+                    : soundstageUrl
+                      ? "READY"
+                      : "-"}
               </div>
             </div>
           </div>
@@ -114,6 +162,34 @@ export default function TestStatesPage() {
               {error}
             </div>
           )}
+          {soundstagePlaying && (
+            <div className="mt-4 flex items-center gap-4 bg-zinc-900/50 rounded p-3">
+              <span className="text-xs text-zinc-400">Ambient</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                defaultValue="0.25"
+                onChange={(e) => {
+                  if (soundstageRef.current) {
+                    soundstageRef.current.volume = parseFloat(e.target.value);
+                  }
+                }}
+                className="flex-1 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+              />
+              <button
+                onClick={() => {
+                  if (soundstageRef.current) {
+                    soundstageRef.current.muted = !soundstageRef.current.muted;
+                  }
+                }}
+                className="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 rounded"
+              >
+                Mute
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="border border-zinc-800 rounded-lg p-6 space-y-4">
@@ -127,11 +203,10 @@ export default function TestStatesPage() {
                   <button
                     key={s.id}
                     onClick={() => setStarter(s.id)}
-                    className={`p-4 rounded-lg text-left border ${
-                      pendingStarter === s.id
+                    className={`p-4 rounded-lg text-left border ${pendingStarter === s.id
                         ? "border-amber-500 bg-amber-950/50"
                         : "border-zinc-700 bg-zinc-900 hover:border-zinc-500"
-                    }`}
+                      }`}
                   >
                     <div className="font-semibold">{s.title}</div>
                     <div className="text-sm text-zinc-400">{s.description}</div>
@@ -256,6 +331,9 @@ export default function TestStatesPage() {
                 history,
                 isGenerating,
                 error,
+                soundstageUrl,
+                soundstageLoading,
+                soundstagePlaying,
               },
               null,
               2
