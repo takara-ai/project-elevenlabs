@@ -5,13 +5,15 @@ import { ReactNode } from "react";
 export function SplashContainer({
     children,
     onClick,
+    fading = false,
 }: {
     children: ReactNode;
     onClick?: () => void;
+    fading?: boolean;
 }) {
     return (
         <div
-            className="absolute inset-0 z-50 flex h-full w-full items-center justify-center overflow-hidden bg-black cursor-pointer select-none"
+            className={`absolute inset-0 z-50 flex h-full w-full items-center justify-center overflow-hidden bg-black cursor-pointer select-none transition-opacity duration-700 ease-out ${fading ? "opacity-0" : "opacity-100"}`}
             onClick={onClick}
         >
             {children}
@@ -34,10 +36,9 @@ export function CornerDecorations() {
 export function Title({ size = "20vw" }: { size?: string }) {
     return (
         <h1
-            className="font-display leading-none tracking-tighter text-white uppercase"
+            className="font-display leading-none tracking-tighter text-white uppercase animate-dying-light"
             style={{
                 fontSize: size,
-                textShadow: "0 0 100px rgba(255,255,255,0.1)",
             }}
         >
             Hanashi

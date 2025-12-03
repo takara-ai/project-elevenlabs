@@ -11,6 +11,8 @@ import { SplashContainer, Title, Prompt } from "../../components/splash";
 export default function Home() {
   const state = useGameStore();
   const [showSplash, setShowSplash] = useState(true);
+  const [splashFading, setSplashFading] = useState(false);
+  const [canvasVisible, setCanvasVisible] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -23,22 +25,31 @@ export default function Home() {
   }, []);
 
   const handleDismissSplash = () => {
+    if (splashFading) return;
+
     if (audioRef.current && !audioPlaying) {
       audioRef.current.play()
         .then(() => setAudioPlaying(true))
         .catch(() => { });
     }
-    setShowSplash(false);
+
+    setSplashFading(true);
+    setTimeout(() => {
+      setShowSplash(false);
+      setCanvasVisible(true);
+    }, 700);
   };
 
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
       <audio ref={audioRef} src="/audio/background.mp3" loop />
 
-      <Canvas className="h-full w-full">
-        <color attach="background" args={["#000000"]} />
-        <Scene />
-      </Canvas>
+      <div className={`h-full w-full transition-opacity duration-700 ease-out ${canvasVisible ? "opacity-100" : "opacity-0"}`}>
+        <Canvas className="h-full w-full">
+          <color attach="background" args={["#000000"]} />
+          <Scene />
+        </Canvas>
+      </div>
 
       <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
         <Button onClick={() => game.start()}>
@@ -59,7 +70,7 @@ export default function Home() {
       </div>
 
       {showSplash && (
-        <SplashContainer onClick={handleDismissSplash}>
+        <SplashContainer onClick={handleDismissSplash} fading={splashFading}>
           <div className="relative z-10 flex flex-col items-center gap-12">
             <Title />
             <Prompt>
