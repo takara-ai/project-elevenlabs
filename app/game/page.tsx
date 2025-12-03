@@ -52,13 +52,13 @@ export default function Home() {
       </div>
 
       <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
-        <Button onClick={() => game.start()}>
+        <Button onClick={() => game.reset()}>
           start
         </Button>
         <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
           <Button
             onClick={() => {
-              game.start();
+              game.reset();
             }}
           >
             start
