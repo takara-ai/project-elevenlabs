@@ -12,7 +12,13 @@ ${isFirstCycle
 - Include sensory details and tension
 - End at a moment of decision`}
 
-- Provide 3 distinct, meaningful action choices
+ACTION CHOICES:
+- Provide 3 BOLD, dramatic action choices that significantly advance the story
+- Each action should be a major decision or dramatic move, not a cautious half-step
+- Actions should lead to entirely new situations, locations, or confrontations
+- Avoid timid options like "investigate further" or "look around" - make them decisive
+- Examples of GOOD actions: "Kick down the door and charge in", "Betray your ally and steal the artifact", "Leap from the cliff into the unknown void"
+- Examples of BAD actions: "Carefully examine the room", "Wait and see what happens", "Proceed cautiously"
 
 VOICE DIRECTION:
 Write the narrative with embedded audio tags for expressive speech synthesis.

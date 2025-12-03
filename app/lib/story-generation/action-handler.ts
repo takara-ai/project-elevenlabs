@@ -6,6 +6,8 @@ import { generateObject, experimental_generateSpeech as generateSpeech } from 'a
 import { z } from 'zod'
 import { STARTER_STORIES } from './data'
 import { buildNarratorMessages } from './prompts'
+import { generateActionSoundEffect } from '../sound-effects/generate'
+import { buildActionSoundPrompt } from '../sound-effects/prompts'
 
 const DISABLE_NARRATOR = process.env.DISABLE_NARRATOR === 'true'
 
@@ -14,18 +16,24 @@ const StorySchema = z.object({
   actions: z.array(z.string()).length(3).describe('3 bold, dramatic action choices that significantly advance the story - no cautious half-steps'),
 })
 
-export interface GeneratedStory {
+export interface ActionResult {
   narrativeText: string
   actions: string[]
   audioBase64: string | null
+  actionSoundUrl: string | null
 }
 
-export async function generateStoryScenario(
+/**
+ * Handle action submission - generates story and action sound effect in parallel
+ * Narrator speech runs after story text is generated (needs the text)
+ */
+export async function handleAction(
   starterStoryId: string,
+  actionText: string,
   history: { text: string; type: 'story' | 'action' }[],
   cycleIndex: number,
   customSetting?: string
-): Promise<GeneratedStory> {
+): Promise<ActionResult> {
   let setting: string
 
   if (starterStoryId === 'custom') {
@@ -37,14 +45,22 @@ export async function generateStoryScenario(
     setting = starter.setting
   }
 
-  // Generate story text
-  const { object } = await generateObject({
-    model: anthropic('claude-3-5-haiku-latest'),
-    schema: StorySchema,
-    messages: buildNarratorMessages(setting, history, cycleIndex === 0),
-  })
+  // Build action sound prompt
+  const actionSoundPrompt = buildActionSoundPrompt(actionText)
 
-  // Generate narration audio (skip if disabled for dev cost savings)
+  // Run Anthropic story generation AND action sound effect in parallel
+  const [storyResult, actionSoundResult] = await Promise.all([
+    generateObject({
+      model: anthropic('claude-3-5-haiku-latest'),
+      schema: StorySchema,
+      messages: buildNarratorMessages(setting, history, cycleIndex === 0),
+    }),
+    generateActionSoundEffect(actionSoundPrompt),
+  ])
+
+  const { object } = storyResult
+
+  // Generate narrator speech AFTER we have the text (must be sequential)
   let audioBase64: string | null = null
   if (!DISABLE_NARRATOR) {
     try {
@@ -54,7 +70,6 @@ export async function generateStoryScenario(
         voice: 'AeRdCCKzvd23BpJoofzx',
       })
       
-      // speech.audio is a GeneratedAudioFile with uint8Array property
       const buffer = Buffer.from(speech.audio.uint8Array)
       audioBase64 = buffer.toString('base64')
     } catch (err) {
@@ -66,5 +81,7 @@ export async function generateStoryScenario(
     narrativeText: object.narrativeText,
     actions: object.actions,
     audioBase64,
+    actionSoundUrl: actionSoundResult.blobUrl || null,
   }
 }
+

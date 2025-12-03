@@ -28,6 +28,7 @@ import {
   type ActionEntry,
 } from "../state-management/states";
 import { generateStoryScenario } from "../story-generation/generate";
+import { handleAction } from "../story-generation/action-handler";
 import { STARTER_STORIES } from "../story-generation/data";
 import { generateSoundEffect } from "../sound-effects/generate";
 import { buildSoundstagePrompt } from "../sound-effects/prompts";
@@ -94,6 +95,7 @@ async function generate(setPhase = true) {
       actions,
       hasAudio: !!audioBase64,
     });
+    
     store._setStory(narrativeText, actions, audioBase64, setPhase);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Generation failed";
@@ -156,20 +158,98 @@ export const game = {
    */
   async act(text: string) {
     log("act", { text });
-    useGameStore.getState()._addAction(text, false);
-    await generate();
+    const store = useGameStore.getState();
+    const { starterStoryId, customSetting, cycleIndex } = store;
+    
+    if (!starterStoryId) throw new Error("No story configured");
+    
+    store._addAction(text, false);
+    store._setGenerating(true);
+    store._setActionSound(null, true);
+    store._setLoading(30);
+    
+    try {
+      const history = getHistoryContext();
+      store._setLoading(60);
+      
+      // Single server action that runs Anthropic + sound effect in parallel
+      const { narrativeText, actions, audioBase64, actionSoundUrl } = await handleAction(
+        starterStoryId,
+        text,
+        history,
+        cycleIndex,
+        customSetting ?? undefined
+      );
+      
+      log("generated", {
+        narrativeText: narrativeText.slice(0, 50) + "...",
+        actions,
+        hasAudio: !!audioBase64,
+        hasActionSound: !!actionSoundUrl,
+      });
+      
+      // Set everything and transition to STORY
+      useGameStore.getState()._setActionSound(actionSoundUrl, false);
+      useGameStore.getState()._setStory(narrativeText, actions, audioBase64, true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Generation failed";
+      log("error", message);
+      useGameStore.getState()._setError(message);
+      throw err;
+    } finally {
+      useGameStore.getState()._setGenerating(false);
+    }
   },
 
   /**
    * Submit custom action using customActionInput from store
    */
   async actCustom() {
-    const { customActionInput } = useGameStore.getState();
+    const store = useGameStore.getState();
+    const { customActionInput, starterStoryId, customSetting, cycleIndex } = store;
+    
     if (!customActionInput.trim()) throw new Error("No custom action entered");
+    if (!starterStoryId) throw new Error("No story configured");
 
     log("actCustom", { text: customActionInput });
-    useGameStore.getState()._addAction(customActionInput.trim(), true);
-    await generate();
+    const actionText = customActionInput.trim();
+    
+    store._addAction(actionText, true);
+    store._setGenerating(true);
+    store._setActionSound(null, true);
+    store._setLoading(30);
+    
+    try {
+      const history = getHistoryContext();
+      store._setLoading(60);
+      
+      // Single server action that runs Anthropic + sound effect in parallel
+      const { narrativeText, actions, audioBase64, actionSoundUrl } = await handleAction(
+        starterStoryId,
+        actionText,
+        history,
+        cycleIndex,
+        customSetting ?? undefined
+      );
+      
+      log("generated", {
+        narrativeText: narrativeText.slice(0, 50) + "...",
+        actions,
+        hasAudio: !!audioBase64,
+        hasActionSound: !!actionSoundUrl,
+      });
+      
+      // Set everything and transition to STORY
+      useGameStore.getState()._setActionSound(actionSoundUrl, false);
+      useGameStore.getState()._setStory(narrativeText, actions, audioBase64, true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Generation failed";
+      log("error", message);
+      useGameStore.getState()._setError(message);
+      throw err;
+    } finally {
+      useGameStore.getState()._setGenerating(false);
+    }
   },
 
   /**

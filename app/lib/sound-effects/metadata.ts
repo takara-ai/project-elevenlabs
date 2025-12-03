@@ -2,7 +2,11 @@
 
 import { list, put } from '@vercel/blob'
 
-const METADATA_FILENAME = 'sound-effects-metadata.json'
+// Separate metadata files for different sound effect types
+const SOUNDSTAGE_METADATA_FILENAME = 'soundstage-effects-metadata.json'
+const ACTION_METADATA_FILENAME = 'action-effects-metadata.json'
+
+export type SoundEffectType = 'soundstage' | 'action'
 
 export interface SoundEffectEntry {
   prompt: string
@@ -15,12 +19,17 @@ interface MetadataFile {
   version: number
 }
 
+function getMetadataFilename(type: SoundEffectType): string {
+  return type === 'soundstage' ? SOUNDSTAGE_METADATA_FILENAME : ACTION_METADATA_FILENAME
+}
+
 /**
  * Get the metadata blob URL if it exists
  */
-async function getMetadataBlobUrl(): Promise<string | null> {
+async function getMetadataBlobUrl(type: SoundEffectType): Promise<string | null> {
   try {
-    const { blobs } = await list({ prefix: METADATA_FILENAME })
+    const filename = getMetadataFilename(type)
+    const { blobs } = await list({ prefix: filename })
     if (blobs.length > 0) {
       return blobs[0].url
     }
@@ -33,9 +42,9 @@ async function getMetadataBlobUrl(): Promise<string | null> {
 /**
  * Read the current metadata file from Vercel Blob
  */
-async function readMetadata(): Promise<MetadataFile> {
+async function readMetadata(type: SoundEffectType): Promise<MetadataFile> {
   try {
-    const blobUrl = await getMetadataBlobUrl()
+    const blobUrl = await getMetadataBlobUrl(type)
     if (!blobUrl) {
       return { entries: [], version: 1 }
     }
@@ -48,7 +57,7 @@ async function readMetadata(): Promise<MetadataFile> {
     const data = await response.json()
     return data as MetadataFile
   } catch (err) {
-    console.error('[Metadata] Failed to read metadata:', err)
+    console.error(`[Metadata:${type}] Failed to read metadata:`, err)
     return { entries: [], version: 1 }
   }
 }
@@ -56,9 +65,10 @@ async function readMetadata(): Promise<MetadataFile> {
 /**
  * Write the metadata file to Vercel Blob
  */
-async function writeMetadata(metadata: MetadataFile): Promise<void> {
+async function writeMetadata(type: SoundEffectType, metadata: MetadataFile): Promise<void> {
+  const filename = getMetadataFilename(type)
   const content = JSON.stringify(metadata, null, 2)
-  await put(METADATA_FILENAME, content, {
+  await put(filename, content, {
     access: 'public',
     contentType: 'application/json',
     addRandomSuffix: false,
@@ -69,8 +79,12 @@ async function writeMetadata(metadata: MetadataFile): Promise<void> {
 /**
  * Add a new sound effect entry to the metadata
  */
-export async function addSoundEffectEntry(prompt: string, blobUrl: string): Promise<void> {
-  const metadata = await readMetadata()
+export async function addSoundEffectEntry(
+  type: SoundEffectType,
+  prompt: string,
+  blobUrl: string
+): Promise<void> {
+  const metadata = await readMetadata(type)
   
   const entry: SoundEffectEntry = {
     prompt,
@@ -81,15 +95,18 @@ export async function addSoundEffectEntry(prompt: string, blobUrl: string): Prom
   metadata.entries.push(entry)
   metadata.version++
   
-  await writeMetadata(metadata)
+  await writeMetadata(type, metadata)
 }
 
 /**
  * Find a sound effect by exact prompt match
  * Future: This can be enhanced with fuzzy/semantic search
  */
-export async function findSoundEffectByPrompt(prompt: string): Promise<SoundEffectEntry | null> {
-  const metadata = await readMetadata()
+export async function findSoundEffectByPrompt(
+  type: SoundEffectType,
+  prompt: string
+): Promise<SoundEffectEntry | null> {
+  const metadata = await readMetadata(type)
   
   // Exact match for now
   const match = metadata.entries.find(
@@ -100,10 +117,10 @@ export async function findSoundEffectByPrompt(prompt: string): Promise<SoundEffe
 }
 
 /**
- * Get all stored sound effects
+ * Get all stored sound effects of a specific type
  */
-export async function getAllSoundEffects(): Promise<SoundEffectEntry[]> {
-  const metadata = await readMetadata()
+export async function getAllSoundEffects(type: SoundEffectType): Promise<SoundEffectEntry[]> {
+  const metadata = await readMetadata(type)
   return metadata.entries
 }
 
@@ -111,8 +128,12 @@ export async function getAllSoundEffects(): Promise<SoundEffectEntry[]> {
  * Find similar sound effects using simple keyword matching
  * Future: Replace with proper semantic search (embeddings)
  */
-export async function findSimilarSoundEffects(prompt: string, limit = 5): Promise<SoundEffectEntry[]> {
-  const metadata = await readMetadata()
+export async function findSimilarSoundEffects(
+  type: SoundEffectType,
+  prompt: string,
+  limit = 5
+): Promise<SoundEffectEntry[]> {
+  const metadata = await readMetadata(type)
   
   const keywords = prompt.toLowerCase().split(/\s+/).filter(w => w.length > 3)
   

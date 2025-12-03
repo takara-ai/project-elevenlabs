@@ -26,6 +26,8 @@ export default function TestStatesPage() {
   const canStart = useGameStore(selectCanStart);
   const soundstageUrl = useGameStore((s) => s.soundstageUrl);
   const soundstageLoading = useGameStore((s) => s.soundstageLoading);
+  const actionSoundUrl = useGameStore((s) => s.actionSoundUrl);
+  const actionSoundLoading = useGameStore((s) => s.actionSoundLoading);
 
   // Objects - select the reference, access properties in render
   const currentStory = useGameStore((s) => s.currentStory);
@@ -39,6 +41,9 @@ export default function TestStatesPage() {
   // Soundstage audio
   const soundstageRef = useRef<HTMLAudioElement | null>(null);
   const [soundstagePlaying, setSoundstagePlaying] = useState(false);
+
+  // Track which action sound URL was last played
+  const lastPlayedActionSoundRef = useRef<string | null>(null);
 
   // Play soundstage when story starts and URL is available
   useEffect(() => {
@@ -60,6 +65,16 @@ export default function TestStatesPage() {
       setSoundstagePlaying(false);
     }
   }, [phase, soundstageUrl, soundstagePlaying]);
+
+  // Play action sound effect when a new actionSoundUrl is set
+  useEffect(() => {
+    if (actionSoundUrl && actionSoundUrl !== lastPlayedActionSoundRef.current) {
+      lastPlayedActionSoundRef.current = actionSoundUrl;
+      const audio = new Audio(actionSoundUrl);
+      audio.volume = 0.7;
+      audio.play().catch(console.error);
+    }
+  }, [actionSoundUrl]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -117,7 +132,7 @@ export default function TestStatesPage() {
         </div>
 
         <div className={`rounded-lg p-6 transition-colors ${phaseColor}`}>
-          <div className="grid grid-cols-5 gap-4 text-center">
+          <div className="grid grid-cols-6 gap-4 text-center">
             <div>
               <div className="text-xs text-zinc-400">Phase</div>
               <div className="text-xl font-mono font-bold">{phase}</div>
@@ -146,6 +161,16 @@ export default function TestStatesPage() {
                     : soundstageUrl
                       ? "READY"
                       : "-"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-zinc-400">Action SFX</div>
+              <div className="text-xl font-mono font-bold">
+                {actionSoundLoading
+                  ? "..."
+                  : actionSoundUrl
+                    ? "READY"
+                    : "-"}
               </div>
             </div>
           </div>
@@ -204,8 +229,8 @@ export default function TestStatesPage() {
                     key={s.id}
                     onClick={() => setStarter(s.id)}
                     className={`p-4 rounded-lg text-left border ${pendingStarter === s.id
-                        ? "border-amber-500 bg-amber-950/50"
-                        : "border-zinc-700 bg-zinc-900 hover:border-zinc-500"
+                      ? "border-amber-500 bg-amber-950/50"
+                      : "border-zinc-700 bg-zinc-900 hover:border-zinc-500"
                       }`}
                   >
                     <div className="font-semibold">{s.title}</div>
@@ -334,6 +359,8 @@ export default function TestStatesPage() {
                 soundstageUrl,
                 soundstageLoading,
                 soundstagePlaying,
+                actionSoundUrl,
+                actionSoundLoading,
               },
               null,
               2

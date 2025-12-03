@@ -46,6 +46,10 @@ export interface GameState {
   soundstageUrl: string | null
   soundstageLoading: boolean
   
+  // Action sound effect (one-shot sound played after action completes)
+  actionSoundUrl: string | null
+  actionSoundLoading: boolean
+  
   // UI state
   isGenerating: boolean
   pendingStarter: string | null
@@ -68,6 +72,7 @@ export interface GameActions {
   _setConfig: (starterStoryId: string, customSetting?: string) => void
   _setError: (error: string | null) => void
   _setSoundstage: (url: string | null, loading?: boolean) => void
+  _setActionSound: (url: string | null, loading?: boolean) => void
   _reset: () => void
 }
 
@@ -85,6 +90,8 @@ const initialState: GameState = {
   error: null,
   soundstageUrl: null,
   soundstageLoading: false,
+  actionSoundUrl: null,
+  actionSoundLoading: false,
   isGenerating: false,
   pendingStarter: null,
   pendingCustomSetting: '',
@@ -158,6 +165,11 @@ export const useGameStore = create<GameState & GameActions>()(
         soundstageUrl: url, 
         soundstageLoading: loading 
       }, false, '_setSoundstage'),
+
+      _setActionSound: (url, loading = false) => set({ 
+        actionSoundUrl: url, 
+        actionSoundLoading: loading 
+      }, false, '_setActionSound'),
 
       _reset: () => set(initialState, false, '_reset'),
     }),
