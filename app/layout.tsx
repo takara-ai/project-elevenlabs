@@ -26,8 +26,8 @@ const blackVesper = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Story Line AI",
-  description: "More than just a story... a journey.",
+  title: "Hanashi",
+  description: "Hanashi means 'story' in Japanese.",
 };
 
 export default function RootLayout({
