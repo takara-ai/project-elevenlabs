@@ -11,12 +11,19 @@ export const GamePhase = {
 
 export type GamePhaseType = typeof GamePhase[keyof typeof GamePhase]
 
+export interface Alignment {
+  characters: string[]
+  character_start_times_seconds: number[]
+  character_end_times_seconds: number[]
+}
+
 export interface StoryEntry {
   type: 'story'
   id: string
   narrativeText: string
   actions: string[]
   audioBase64: string | null
+  alignment: Alignment | null
   timestamp: number
 }
 
@@ -67,7 +74,7 @@ export interface GameActions {
   _setPhase: (phase: GamePhaseType) => void
   _setGenerating: (isGenerating: boolean) => void
   _setLoading: (progress: number) => void
-  _setStory: (narrativeText: string, actions: string[], audioBase64: string | null, setPhase?: boolean) => void
+  _setStory: (narrativeText: string, actions: string[], audioBase64: string | null, alignment: Alignment | null, setPhase?: boolean) => void
   _addAction: (text: string, isCustom: boolean) => void
   _setConfig: (starterStoryId: string, customSetting?: string) => void
   _setError: (error: string | null) => void
@@ -116,13 +123,14 @@ export const useGameStore = create<GameState & GameActions>()(
         loadingProgress: Math.min(100, Math.max(0, progress))
       }, false, '_setLoading'),
 
-      _setStory: (narrativeText, actions, audioBase64, setPhase = true) => {
+      _setStory: (narrativeText, actions, audioBase64, alignment, setPhase = true) => {
         const story: StoryEntry = {
           type: 'story',
           id: generateId(),
           narrativeText,
           actions,
           audioBase64,
+          alignment,
           timestamp: Date.now(),
         }
         set({

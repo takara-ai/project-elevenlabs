@@ -1,13 +1,13 @@
 'use server'
 
 import { anthropic } from '@ai-sdk/anthropic'
-import { elevenlabs } from '@ai-sdk/elevenlabs'
-import { generateObject, experimental_generateSpeech as generateSpeech } from 'ai'
+import { generateObject } from 'ai'
 import { z } from 'zod'
 import { STARTER_STORIES } from './data'
 import { buildNarratorMessages } from './prompts'
 import { generateActionSoundEffect } from '../sound-effects/generate'
 import { buildActionSoundPrompt } from '../sound-effects/prompts'
+import { generateSpeechWithTimestamps, type Alignment } from '../speech/elevenlabs-tts'
 
 const DISABLE_NARRATOR = process.env.DISABLE_NARRATOR === 'true'
 
@@ -20,6 +20,7 @@ export interface ActionResult {
   narrativeText: string
   actions: string[]
   audioBase64: string | null
+  alignment: Alignment | null
   actionSoundUrl: string | null
 }
 
@@ -60,18 +61,14 @@ export async function handleAction(
 
   const { object } = storyResult
 
-  // Generate narrator speech AFTER we have the text (must be sequential)
+  // Generate narrator speech with timestamps AFTER we have the text (must be sequential)
   let audioBase64: string | null = null
+  let alignment: Alignment | null = null
   if (!DISABLE_NARRATOR) {
     try {
-      const speech = await generateSpeech({
-        model: elevenlabs.speech('eleven_v3'),
-        text: object.narrativeText,
-        voice: 'AeRdCCKzvd23BpJoofzx',
-      })
-      
-      const buffer = Buffer.from(speech.audio.uint8Array)
-      audioBase64 = buffer.toString('base64')
+      const result = await generateSpeechWithTimestamps(object.narrativeText)
+      audioBase64 = result.audioBase64
+      alignment = result.alignment
     } catch (err) {
       console.error('[Speech] Failed to generate audio:', err)
     }
@@ -81,6 +78,7 @@ export async function handleAction(
     narrativeText: object.narrativeText,
     actions: object.actions,
     audioBase64,
+    alignment,
     actionSoundUrl: actionSoundResult.blobUrl || null,
   }
 }

@@ -11,6 +11,7 @@ import {
   ActionEntry,
 } from "../lib/state-management/states";
 import { STARTER_STORIES } from "../lib/story-generation/data";
+import { useCaptions } from "../lib/speech/captions";
 
 export default function TestStatesPage() {
   // Primitives - safe to select directly
@@ -44,6 +45,10 @@ export default function TestStatesPage() {
 
   // Track which action sound URL was last played
   const lastPlayedActionSoundRef = useRef<string | null>(null);
+
+  // Narrator audio ref and synced captions
+  const narratorAudioRef = useRef<HTMLAudioElement | null>(null);
+  const { visibleText: captionText } = useCaptions(currentStory?.alignment ?? null, narratorAudioRef);
 
   // Play soundstage when story starts and URL is available
   useEffect(() => {
@@ -259,19 +264,31 @@ export default function TestStatesPage() {
           {/* STORY - Read and proceed */}
           {phase === GamePhase.STORY && currentStory && (
             <div className="space-y-4">
+              {/* Synced captions */}
+              {currentStory.alignment && (
+                <div className="bg-zinc-900 border border-emerald-800 rounded p-4 min-h-[80px]">
+                  <div className="text-xs text-emerald-500 mb-2">LIVE CAPTIONS</div>
+                  <p className="text-zinc-200 text-lg">
+                    {captionText || <span className="text-zinc-600">Waiting for audio...</span>}
+                  </p>
+                </div>
+              )}
+              {/* Full text (fallback or reference) */}
               <div className="bg-zinc-900 rounded p-4">
-                <p className="text-zinc-200 whitespace-pre-wrap">
+                <div className="text-xs text-zinc-500 mb-2">FULL TEXT</div>
+                <p className="text-zinc-400 whitespace-pre-wrap text-sm">
                   {currentStory.narrativeText}
                 </p>
-                {currentStory.audioBase64 && (
-                  <audio
-                    autoPlay
-                    controls
-                    className="w-full mt-4"
-                    src={`data:audio/mpeg;base64,${currentStory.audioBase64}`}
-                  />
-                )}
               </div>
+              {currentStory.audioBase64 && (
+                <audio
+                  ref={narratorAudioRef}
+                  autoPlay
+                  controls
+                  className="w-full"
+                  src={`data:audio/mpeg;base64,${currentStory.audioBase64}`}
+                />
+              )}
               <button
                 onClick={() => game.ready()}
                 className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded font-medium"

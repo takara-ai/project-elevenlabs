@@ -83,7 +83,7 @@ async function generate(setPhase = true) {
     const history = getHistoryContext();
     store._setLoading(60);
 
-    const { narrativeText, actions, audioBase64 } = await generateStoryScenario(
+    const { narrativeText, actions, audioBase64, alignment } = await generateStoryScenario(
       starterStoryId,
       history,
       cycleIndex,
@@ -94,9 +94,10 @@ async function generate(setPhase = true) {
       narrativeText: narrativeText.slice(0, 50) + "...",
       actions,
       hasAudio: !!audioBase64,
+      hasAlignment: !!alignment,
     });
     
-    store._setStory(narrativeText, actions, audioBase64, setPhase);
+    store._setStory(narrativeText, actions, audioBase64, alignment, setPhase);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Generation failed";
     log("error", message);
@@ -173,7 +174,7 @@ export const game = {
       store._setLoading(60);
       
       // Single server action that runs Anthropic + sound effect in parallel
-      const { narrativeText, actions, audioBase64, actionSoundUrl } = await handleAction(
+      const { narrativeText, actions, audioBase64, alignment, actionSoundUrl } = await handleAction(
         starterStoryId,
         text,
         history,
@@ -185,12 +186,13 @@ export const game = {
         narrativeText: narrativeText.slice(0, 50) + "...",
         actions,
         hasAudio: !!audioBase64,
+        hasAlignment: !!alignment,
         hasActionSound: !!actionSoundUrl,
       });
       
       // Set everything and transition to STORY
       useGameStore.getState()._setActionSound(actionSoundUrl, false);
-      useGameStore.getState()._setStory(narrativeText, actions, audioBase64, true);
+      useGameStore.getState()._setStory(narrativeText, actions, audioBase64, alignment, true);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Generation failed";
       log("error", message);
@@ -224,7 +226,7 @@ export const game = {
       store._setLoading(60);
       
       // Single server action that runs Anthropic + sound effect in parallel
-      const { narrativeText, actions, audioBase64, actionSoundUrl } = await handleAction(
+      const { narrativeText, actions, audioBase64, alignment, actionSoundUrl } = await handleAction(
         starterStoryId,
         actionText,
         history,
@@ -236,12 +238,13 @@ export const game = {
         narrativeText: narrativeText.slice(0, 50) + "...",
         actions,
         hasAudio: !!audioBase64,
+        hasAlignment: !!alignment,
         hasActionSound: !!actionSoundUrl,
       });
       
       // Set everything and transition to STORY
       useGameStore.getState()._setActionSound(actionSoundUrl, false);
-      useGameStore.getState()._setStory(narrativeText, actions, audioBase64, true);
+      useGameStore.getState()._setStory(narrativeText, actions, audioBase64, alignment, true);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Generation failed";
       log("error", message);
