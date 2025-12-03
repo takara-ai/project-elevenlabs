@@ -44,21 +44,29 @@ export default function Home() {
         <Button onClick={() => game.start()}>
           start
         </Button>
-        <pre className="p-4 bg-black/50 text-white max-w-md overflow-x-auto text-xs">
-          {JSON.stringify(state, null, 2)}
-        </pre>
-      </div>
+        <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
+          <Button
+            onClick={() => {
+              game.start();
+            }}
+          >
+            start
+          </Button>
+          <pre className="p-4 bg-black/50 text-white max-w-sm max-h-[20rem] text-xs overflow-x-auto">
+            {JSON.stringify(state, null, 2)}
+          </pre>
+        </div>
 
-      {showSplash && (
-        <SplashContainer onClick={handleDismissSplash}>
-          <div className="relative z-10 flex flex-col items-center gap-12">
-            <Title />
-            <Prompt>
-              {audioPlaying ? "Click anywhere to begin" : "Click to enable audio"}
-            </Prompt>
-          </div>
-        </SplashContainer>
-      )}
-    </div>
-  );
+        {showSplash && (
+          <SplashContainer onClick={handleDismissSplash}>
+            <div className="relative z-10 flex flex-col items-center gap-12">
+              <Title />
+              <Prompt>
+                {audioPlaying ? "Click anywhere to begin" : "Click to enable audio"}
+              </Prompt>
+            </div>
+          </SplashContainer>
+        )}
+      </div>
+      );
 }
