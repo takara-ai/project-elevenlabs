@@ -1,31 +1,35 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
-import { Scene } from "./_scene/scene";
-import { useGameStore } from "./lib/state-management/states";
-import { Button } from "@/components/ui/button";
-import { game } from "./lib/game/controller";
-export default function Home() {
-  const state = useGameStore();
-  return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
-      <Canvas className="h-full w-full">
-        <color attach="background" args={["#000000"]} />
-        <Scene />
-      </Canvas>
+import { useRouter } from "next/navigation";
+import { SplashContainer, Prompt } from "../components/splash";
 
-      <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
-        <Button
-          onClick={() => {
-            game.start();
-          }}
-        >
-          start
-        </Button>
-        <pre className="p-4 bg-black/50 text-white max-w-md overflow-x-auto">
-          {JSON.stringify(state, null, 2)}
-        </pre>
+export default function Home() {
+  const router = useRouter();
+
+  return (
+    <SplashContainer onClick={() => router.push("/game")}>
+      <div className="relative z-10 flex flex-col items-center gap-16 max-w-2xl px-8 text-center">
+        <div className="flex flex-col items-center gap-4">
+          <h1
+            className="font-display text-[10vw] leading-none tracking-tighter text-white"
+            style={{ textShadow: "0 0 100px rgba(255,255,255,0.1)" }}
+          >
+            Project Elevenlabs
+          </h1>
+          <p className="text-neutral-500 text-sm tracking-widest">
+            by the West Europe Team
+          </p>
+          <p className="text-neutral-400 text-base">
+            Cody Adams and Jordan Legg
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-6">
+
+        </div>
+
+        <Prompt>Click anywhere to enter</Prompt>
       </div>
-    </div>
+    </SplashContainer>
   );
 }
