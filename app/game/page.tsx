@@ -1,0 +1,64 @@
+"use client";
+
+import { Canvas } from "@react-three/fiber";
+import { Scene } from "../_scene/scene";
+import { useGameStore } from "../lib/state-management/states";
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { game } from "../lib/game/controller";
+import { SplashContainer, Title, Prompt } from "../../components/splash";
+
+export default function Home() {
+  const state = useGameStore();
+  const [showSplash, setShowSplash] = useState(true);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.play()
+        .then(() => setAudioPlaying(true))
+        .catch(() => setAudioPlaying(false));
+    }
+  }, []);
+
+  const handleDismissSplash = () => {
+    if (audioRef.current && !audioPlaying) {
+      audioRef.current.play()
+        .then(() => setAudioPlaying(true))
+        .catch(() => { });
+    }
+    setShowSplash(false);
+  };
+
+  return (
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
+      <audio ref={audioRef} src="/audio/background.mp3" loop />
+
+      <Canvas className="h-full w-full">
+        <color attach="background" args={["#000000"]} />
+        <Scene />
+      </Canvas>
+
+      <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
+        <Button onClick={() => game.start()}>
+          start
+        </Button>
+        <pre className="p-4 bg-black/50 text-white max-w-md overflow-x-auto text-xs">
+          {JSON.stringify(state, null, 2)}
+        </pre>
+      </div>
+
+      {showSplash && (
+        <SplashContainer onClick={handleDismissSplash}>
+          <div className="relative z-10 flex flex-col items-center gap-12">
+            <Title />
+            <Prompt>
+              {audioPlaying ? "Click anywhere to begin" : "Click to enable audio"}
+            </Prompt>
+          </div>
+        </SplashContainer>
+      )}
+    </div>
+  );
+}
