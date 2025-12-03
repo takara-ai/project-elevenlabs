@@ -31,6 +31,7 @@ export interface ActionEntry {
   type: "action";
   id: string;
   text: string;
+  choiceIndex: number;
   isCustom: boolean;
   timestamp: number;
 }
@@ -81,8 +82,8 @@ export interface GameActions {
     alignment: Alignment | null,
     setPhase?: boolean
   ) => void;
-  _addAction: (text: string, isCustom: boolean) => void;
-  _setConfig: (starterStoryId: string, customSetting?: string) => void;
+  _addAction: (text: string, choiceIndex: number, isCustom: boolean) => void;
+  _setConfig: () => void;
   _setError: (error: string | null) => void;
   _setSoundstage: (url: string | null, loading?: boolean) => void;
   _setActionSound: (url: string | null, loading?: boolean) => void;
@@ -178,11 +179,12 @@ export const useGameStore = create<GameState & GameActions>()(
         );
       },
 
-      _addAction: (text, isCustom) => {
+      _addAction: (text, choiceIndex, isCustom) => {
         const action: ActionEntry = {
           type: "action",
           id: generateId(),
           text,
+          choiceIndex,
           isCustom,
           timestamp: Date.now(),
         };
@@ -200,12 +202,10 @@ export const useGameStore = create<GameState & GameActions>()(
         );
       },
 
-      _setConfig: (starterStoryId, customSetting) =>
+      _setConfig: () =>
         set(
           {
             sessionId: generateId(),
-            starterStoryId,
-            customSetting: customSetting || null,
             phase: GamePhase.LOADING,
             loadingProgress: 0,
           },
