@@ -3,8 +3,6 @@
 import { Canvas } from "@react-three/fiber";
 import { Scene } from "./_scene/scene";
 import { useGameStore } from "./lib/state-management/states";
-import { Button } from "@/components/ui/button";
-import { game } from "./lib/game/controller";
 export default function Home() {
   const state = useGameStore();
   return (
@@ -15,13 +13,6 @@ export default function Home() {
       </Canvas>
 
       <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
-        <Button
-          onClick={() => {
-            game.start();
-          }}
-        >
-          start
-        </Button>
         <pre className="p-4 bg-black/50 text-white max-w-sm max-h-[20rem] text-xs overflow-x-auto">
           {JSON.stringify(state, null, 2)}
         </pre>

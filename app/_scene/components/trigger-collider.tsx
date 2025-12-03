@@ -1,10 +1,10 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
 import { useCursorStore } from "../store/cursor";
-import { Line } from "@react-three/drei";
+import { Line, Html } from "@react-three/drei";
 
 export interface TriggerColliderProps {
   /**
@@ -43,6 +43,10 @@ export interface TriggerColliderProps {
    * Whether to show debug visualization
    */
   debug?: boolean;
+  /**
+   * Whether to show progress bar when trigger is active
+   */
+  showProgress?: boolean;
 }
 
 /**
@@ -56,13 +60,16 @@ export function TriggerCollider({
   onExit,
   onInside,
   onTrigger,
-  triggerDuration = 5,
+  triggerDuration = 2,
   debug = true,
+  showProgress = false,
 }: TriggerColliderProps) {
   const isInsideRef = useRef(false);
   const boxRef = useRef<THREE.Box3 | null>(null);
   const timeInsideRef = useRef(0);
   const hasTriggeredRef = useRef(false);
+  const [isInside, setIsInside] = useState(false);
+  const [hasTriggered, setHasTriggered] = useState(false);
 
   // Initialize bounding box
   useEffect(() => {
@@ -90,14 +97,20 @@ export function TriggerCollider({
     if (isCurrentlyInside && !isInsideRef.current) {
       // Just entered
       isInsideRef.current = true;
+      setIsInside(true);
       timeInsideRef.current = 0;
       hasTriggeredRef.current = false;
+      setHasTriggered(false);
       onEnter?.();
     } else if (!isCurrentlyInside && isInsideRef.current) {
       // Just exited
       isInsideRef.current = false;
+      setIsInside(false);
       timeInsideRef.current = 0;
+
       hasTriggeredRef.current = false;
+      setHasTriggered(false);
+
       onExit?.();
     }
 
@@ -106,6 +119,7 @@ export function TriggerCollider({
       timeInsideRef.current += delta;
       if (timeInsideRef.current >= triggerDuration) {
         hasTriggeredRef.current = true;
+        setHasTriggered(true);
         onTrigger();
       }
     }
@@ -167,6 +181,26 @@ export function TriggerCollider({
           lineWidth={LINE_WIDTH}
         />
       ))}
+      {showProgress && onTrigger && isInside && !hasTriggered && (
+        <Html
+          position={[cx, cy + height / 2 + 0.5, cz]}
+          className="w-20 z-1000"
+          transform={false}
+          center
+        >
+          <div className="w-full relative bg-zinc-700 rounded-sm h-4 overflow-hidden">
+            <div
+              className="absolute top-0 left-0 bg-green-500 h-full"
+              style={{
+                width: "100%",
+                animation: `fill-progress-bar ${
+                  triggerDuration || 1
+                }s linear forwards`,
+              }}
+            />
+          </div>
+        </Html>
+      )}
     </>
   );
 }

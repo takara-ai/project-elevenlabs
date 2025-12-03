@@ -19,23 +19,32 @@ export const COLUMN_WIDTH = 4;
 const BRANCH_HEIGHT = 5;
 const SMOOTHING = 3;
 
+function choiceToOption(
+  choice: number | null
+): "left" | "center" | "right" | null {
+  if (choice === null) return null;
+  if (choice === 0) return "left";
+  if (choice === 1) return "center";
+  if (choice === 2) return "right";
+  return null;
+}
+
 export function Phase({
   phase,
   offset,
   isCurrentPhase,
+  selectedChoice,
 }: {
   phase: HistoryEntry;
   offset: [number, number, number];
   isCurrentPhase: boolean;
+  selectedChoice: number | null;
 }) {
   const [hoveredOption, setHoveredOption] = useState<
     "left" | "center" | "right" | null
-  >(null);
+  >(choiceToOption(selectedChoice));
   const addEffect = useCameraStore((state) => state.addEffect);
   const removeEffect = useCameraStore((state) => state.removeEffect);
-  const gamePhase = useGameStore((state) => state.phase);
-  const canTriggerChoice = isCurrentPhase && gamePhase === GamePhase.ACTION;
-
   // Generate unique IDs for this phase's triggers
   const phaseId = phase.id;
   const leftTriggerId = `${phaseId}-left`;
@@ -117,6 +126,7 @@ export function Phase({
           size={OPTION_TRIGGER_SIZE}
           id={leftTriggerId}
           onEnter={() => {
+            if (selectedChoice !== null) return;
             setHoveredOption("left");
             // Center camera on left choice, keep zoom at 0.6
             addEffect({
@@ -127,15 +137,17 @@ export function Phase({
             });
           }}
           onExit={() => {
+            if (selectedChoice !== null) return;
             setHoveredOption((prev) => (prev === "left" ? null : prev));
             removeEffect(leftTriggerId);
           }}
           onTrigger={() => {
-            if (canTriggerChoice && phase.actions[0]) {
-              game.act(phase.actions[0]);
+            if (selectedChoice !== null) return;
+            if (isCurrentPhase && phase.actions[0]) {
+              game.act({ text: phase.actions[0], choiceIndex: 0 });
             }
           }}
-          triggerDuration={5}
+          showProgress={selectedChoice === null}
         />
 
         {/* Center option trigger */}
@@ -144,6 +156,7 @@ export function Phase({
           size={OPTION_TRIGGER_SIZE}
           id={centerTriggerId}
           onEnter={() => {
+            if (selectedChoice !== null) return;
             setHoveredOption("center");
             // Center camera on center choice, keep zoom at 0.6
             addEffect({
@@ -154,15 +167,17 @@ export function Phase({
             });
           }}
           onExit={() => {
+            if (selectedChoice !== null) return;
             setHoveredOption((prev) => (prev === "center" ? null : prev));
             removeEffect(centerTriggerId);
           }}
           onTrigger={() => {
-            if (canTriggerChoice && phase.actions[1]) {
-              game.act(phase.actions[1]);
+            if (selectedChoice !== null) return;
+            if (isCurrentPhase && phase.actions[1]) {
+              game.act({ text: phase.actions[1], choiceIndex: 1 });
             }
           }}
-          triggerDuration={5}
+          showProgress={selectedChoice === null}
         />
 
         {/* Right option trigger */}
@@ -171,6 +186,7 @@ export function Phase({
           size={OPTION_TRIGGER_SIZE}
           id={rightTriggerId}
           onEnter={() => {
+            if (selectedChoice !== null) return;
             setHoveredOption("right");
             // Center camera on right choice, keep zoom at 0.6
             addEffect({
@@ -181,17 +197,20 @@ export function Phase({
             });
           }}
           onExit={() => {
+            if (selectedChoice !== null) return;
             setHoveredOption((prev) => (prev === "right" ? null : prev));
             removeEffect(rightTriggerId);
           }}
           onTrigger={() => {
+            if (selectedChoice !== null) return;
+            if (!isCurrentPhase) return;
             const prompt = window.prompt("What do you want to do?");
             if (prompt) {
-              game.act(prompt);
+              game.act({ text: prompt, choiceIndex: 2 });
             }
             removeEffect(rightTriggerId);
           }}
-          triggerDuration={5}
+          showProgress={selectedChoice === null}
         />
 
         <StraitLine

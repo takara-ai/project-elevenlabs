@@ -124,3 +124,12 @@
     @apply bg-background text-foreground font-serif;
   }
 }
+
+@keyframes fill-progress-bar {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}

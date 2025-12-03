@@ -12,10 +12,24 @@ export function StraitLine({
   start: [number, number, number];
   end: [number, number, number];
 }) {
+  // Compute 4 evenly spaced middle points between start and end
+  const points: [number, number, number][] = React.useMemo(() => {
+    const startVec = new THREE.Vector3(...start);
+    const endVec = new THREE.Vector3(...end);
+    const pointsArray = [startVec];
+    for (let i = 1; i <= 4; i++) {
+      const t = i / 5;
+      const mid = new THREE.Vector3().lerpVectors(startVec, endVec, t);
+      pointsArray.push(mid);
+    }
+    pointsArray.push(endVec);
+    return pointsArray.map((p) => [p.x, p.y, p.z]);
+  }, [start, end]);
+
   return (
     <Line
       scale={[1, Y_SCALE, 1]}
-      points={[start, end]}
+      points={points}
       color="white"
       worldUnits
       lineWidth={LINE_WIDTH}

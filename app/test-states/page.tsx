@@ -4,13 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { game } from "../lib/game/controller";
 import {
   useGameStore,
-  selectCanStart,
   GamePhase,
   HistoryEntry,
   StoryEntry,
   ActionEntry,
 } from "../lib/state-management/states";
-import { STARTER_STORIES } from "../lib/story-generation/data";
 import { useCaptions } from "../lib/speech/captions";
 
 export default function TestStatesPage() {
@@ -22,9 +20,6 @@ export default function TestStatesPage() {
   const error = useGameStore((s) => s.error);
   const isGenerating = useGameStore((s) => s.isGenerating);
   const pendingStarter = useGameStore((s) => s.pendingStarter);
-  const pendingCustomSetting = useGameStore((s) => s.pendingCustomSetting);
-  const customActionInput = useGameStore((s) => s.customActionInput);
-  const canStart = useGameStore(selectCanStart);
   const soundstageUrl = useGameStore((s) => s.soundstageUrl);
   const soundstageLoading = useGameStore((s) => s.soundstageLoading);
   const actionSoundUrl = useGameStore((s) => s.actionSoundUrl);
@@ -34,10 +29,8 @@ export default function TestStatesPage() {
   const currentStory = useGameStore((s) => s.currentStory);
   const history = useGameStore((s) => s.history);
 
-  // Actions
-  const setStarter = useGameStore((s) => s.setStarter);
-  const setCustomSetting = useGameStore((s) => s.setCustomSetting);
-  const setCustomActionInput = useGameStore((s) => s.setCustomActionInput);
+  // Local state for custom action input
+  const [customActionInput, setCustomActionInput] = useState("");
 
   // Soundstage audio
   const soundstageRef = useRef<HTMLAudioElement | null>(null);
@@ -48,7 +41,10 @@ export default function TestStatesPage() {
 
   // Narrator audio ref and synced captions
   const narratorAudioRef = useRef<HTMLAudioElement | null>(null);
-  const { visibleText: captionText } = useCaptions(currentStory?.alignment ?? null, narratorAudioRef);
+  const { visibleText: captionText } = useCaptions(
+    currentStory?.alignment ?? null,
+    narratorAudioRef
+  );
 
   // Play soundstage when story starts and URL is available
   useEffect(() => {
@@ -154,7 +150,9 @@ export default function TestStatesPage() {
             </div>
             <div>
               <div className="text-xs text-zinc-400">History</div>
-              <div className="text-xl font-mono font-bold">{history.length}</div>
+              <div className="text-xl font-mono font-bold">
+                {history.length}
+              </div>
             </div>
             <div>
               <div className="text-xs text-zinc-400">Soundstage</div>
@@ -162,20 +160,16 @@ export default function TestStatesPage() {
                 {soundstageLoading
                   ? "..."
                   : soundstagePlaying
-                    ? "ON"
-                    : soundstageUrl
-                      ? "READY"
-                      : "-"}
+                  ? "ON"
+                  : soundstageUrl
+                  ? "READY"
+                  : "-"}
               </div>
             </div>
             <div>
               <div className="text-xs text-zinc-400">Action SFX</div>
               <div className="text-xl font-mono font-bold">
-                {actionSoundLoading
-                  ? "..."
-                  : actionSoundUrl
-                    ? "READY"
-                    : "-"}
+                {actionSoundLoading ? "..." : actionSoundUrl ? "READY" : "-"}
               </div>
             </div>
           </div>
@@ -225,41 +219,25 @@ export default function TestStatesPage() {
         <div className="border border-zinc-800 rounded-lg p-6 space-y-4">
           <h2 className="text-lg font-semibold">Controls</h2>
 
-          {/* IDLE - Select story */}
-          {phase === GamePhase.IDLE && (
-            <div className="space-y-4">
-              <div className="grid gap-3">
-                {STARTER_STORIES.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setStarter(s.id)}
-                    className={`p-4 rounded-lg text-left border ${pendingStarter === s.id
-                      ? "border-amber-500 bg-amber-950/50"
-                      : "border-zinc-700 bg-zinc-900 hover:border-zinc-500"
-                      }`}
-                  >
-                    <div className="font-semibold">{s.title}</div>
-                    <div className="text-sm text-zinc-400">{s.description}</div>
-                  </button>
-                ))}
+          {/* IDLE - Select story from initial story actions */}
+          {phase === GamePhase.IDLE &&
+            history[0] &&
+            history[0].type === "story" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  {(history[0] as StoryEntry).actions.map((action, i) => (
+                    <button
+                      key={i}
+                      onClick={() => game.act({ text: action, choiceIndex: i })}
+                      disabled={isGenerating}
+                      className="w-full py-2 px-4 bg-zinc-800 hover:bg-amber-800 disabled:opacity-50 rounded text-left"
+                    >
+                      {action}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {pendingStarter === "custom" && (
-                <textarea
-                  value={pendingCustomSetting}
-                  onChange={(e) => setCustomSetting(e.target.value)}
-                  placeholder="Describe your story setting..."
-                  className="w-full h-24 px-4 py-3 bg-zinc-900 border border-zinc-700 rounded resize-none focus:outline-none focus:border-amber-500"
-                />
-              )}
-              <button
-                onClick={() => game.start()}
-                disabled={!canStart || isGenerating}
-                className="w-full py-3 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 rounded font-medium"
-              >
-                {isGenerating ? "Starting..." : "game.start()"}
-              </button>
-            </div>
-          )}
+            )}
 
           {/* STORY - Read and proceed */}
           {phase === GamePhase.STORY && currentStory && (
@@ -267,9 +245,15 @@ export default function TestStatesPage() {
               {/* Synced captions */}
               {currentStory.alignment && (
                 <div className="bg-zinc-900 border border-emerald-800 rounded p-4 min-h-[80px]">
-                  <div className="text-xs text-emerald-500 mb-2">LIVE CAPTIONS</div>
+                  <div className="text-xs text-emerald-500 mb-2">
+                    LIVE CAPTIONS
+                  </div>
                   <p className="text-zinc-200 text-lg">
-                    {captionText || <span className="text-zinc-600">Waiting for audio...</span>}
+                    {captionText || (
+                      <span className="text-zinc-600">
+                        Waiting for audio...
+                      </span>
+                    )}
                   </p>
                 </div>
               )}
@@ -290,10 +274,12 @@ export default function TestStatesPage() {
                 />
               )}
               <button
-                onClick={() => game.ready()}
+                onClick={() =>
+                  useGameStore.getState()._setPhase(GamePhase.ACTION)
+                }
                 className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded font-medium"
               >
-                game.ready()
+                Transition to ACTION
               </button>
             </div>
           )}
@@ -305,7 +291,7 @@ export default function TestStatesPage() {
                 {currentStory.actions.map((action, i) => (
                   <button
                     key={i}
-                    onClick={() => game.act(action)}
+                    onClick={() => game.act({ text: action, choiceIndex: i })}
                     disabled={isGenerating}
                     className="w-full py-2 px-4 bg-zinc-800 hover:bg-purple-800 disabled:opacity-50 rounded text-left"
                   >
@@ -321,11 +307,19 @@ export default function TestStatesPage() {
                   className="flex-1 px-4 py-2 bg-zinc-900 border border-zinc-700 rounded focus:outline-none focus:border-purple-500"
                 />
                 <button
-                  onClick={() => game.actCustom()}
+                  onClick={() => {
+                    if (customActionInput.trim()) {
+                      game.act({
+                        text: customActionInput.trim(),
+                        choiceIndex: currentStory.actions.length,
+                      });
+                      setCustomActionInput("");
+                    }
+                  }}
                   disabled={!customActionInput.trim() || isGenerating}
                   className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-700 rounded font-medium"
                 >
-                  game.actCustom()
+                  Submit Custom
                 </button>
               </div>
             </div>
