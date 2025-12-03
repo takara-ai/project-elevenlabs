@@ -1,0 +1,41 @@
+import { useMemo } from "react";
+
+function generateRandomSpheres(count: number) {
+  // Only generate ONCE, so the positions/colors remain stable across renders.
+  const arr: {
+    key: number;
+    position: [number, number, number];
+    color: string;
+  }[] = [];
+  for (let i = 0; i < count; i++) {
+    // Random position within spherical shell radius 2-4
+    const r = 2 + Math.random() * 2; // 2 to 4
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const x = r * Math.sin(phi) * Math.cos(theta);
+    const y = r * Math.sin(phi) * Math.sin(theta);
+    const z = r * Math.cos(phi);
+    arr.push({
+      key: i,
+      position: [x, y, z],
+      color: `hsl(${Math.random() * 360}, 80%, 60%)`,
+    });
+  }
+  return arr;
+}
+
+export function RandomSpheres({ count = 20 }: { count?: number }) {
+  // Stable random spheres using useMemo, so random is only called on first mount.
+  const spheres = useMemo(() => generateRandomSpheres(count), [count]);
+
+  return (
+    <>
+      {spheres.map(({ key, position, color }) => (
+        <mesh key={key} position={position as [number, number, number]}>
+          <sphereGeometry args={[0.25, 24, 24]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+      ))}
+    </>
+  );
+}
