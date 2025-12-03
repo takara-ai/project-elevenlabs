@@ -1,17 +1,16 @@
 import {
-  EffectComposer,
   Bloom,
+  EffectComposer,
   ToneMapping,
 } from "@react-three/postprocessing";
 import { useControls } from "leva";
-import { RandomSpheres } from "./components/random-spheres";
-import { Character } from "./components/character";
-import { DebugOverlay } from "./components/debug";
-import { Floor } from "./components/floor";
-import { CursorPosition } from "./components/cursor-position";
 import { Camera } from "./components/camera";
+import { Character } from "./components/character";
+import { CursorPosition } from "./components/cursor-position";
+import { Floor } from "./components/floor";
+import { RandomSpheres } from "./components/random-spheres";
 import { Title3D } from "./components/title";
-import { Line000to0010 } from "./components/line";
+import { History } from "./components/history";
 
 export function Scene() {
   // Leva controls for scene parameters
@@ -65,7 +64,7 @@ export function Scene() {
         intensity={lighting.pointLightIntensity}
       />
       <RandomSpheres count={scene.randomSpheresCount} />
-      <Line000to0010 />
+      <History />
       <Character
         animationName={character.animation}
         animationSpeed={character.animationSpeed}

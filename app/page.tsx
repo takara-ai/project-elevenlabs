@@ -22,7 +22,7 @@ export default function Home() {
         >
           start
         </Button>
-        <pre className="p-4 bg-black/50 text-white">
+        <pre className="p-4 bg-black/50 text-white max-w-md overflow-x-auto">
           {JSON.stringify(state, null, 2)}
         </pre>
       </div>
