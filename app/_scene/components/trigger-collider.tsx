@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { useCursorStore } from "../store/cursor";
 import { useTriggerUIStore } from "../store/trigger-ui";
 import { Line } from "@react-three/drei";
+import { useSearchParams } from "next/navigation";
 
 export interface TriggerColliderProps {
   /**
@@ -37,10 +38,6 @@ export interface TriggerColliderProps {
    */
   id?: string;
   /**
-   * Whether to show debug visualization
-   */
-  debug?: boolean;
-  /**
    * Optional label to show in the trigger UI
    */
   label?: string;
@@ -57,10 +54,11 @@ export function TriggerCollider({
   onExit,
   onInside,
   onTrigger,
-  debug = true,
   label,
   id,
 }: TriggerColliderProps) {
+  const params = useSearchParams();
+  const debug = !!params.get("debug");
   const boxRef = useRef<THREE.Box3 | null>(null);
   const [isInside, setIsInside] = useState(false);
   const { setTrigger, clearTrigger, setOnTriggerCallback } =

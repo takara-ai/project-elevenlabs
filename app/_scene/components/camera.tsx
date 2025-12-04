@@ -86,8 +86,14 @@ export function Camera() {
 
   // Update zoom and position based on camera store effects
   useEffect(() => {
+    // Get the top priority effect (last in array, or last topPriority effect)
+    const topPriorityEffects = activeEffects.filter((e) => e.topPriority);
     const topEffect =
-      activeEffects.length > 0 ? activeEffects[activeEffects.length - 1] : null;
+      topPriorityEffects.length > 0
+        ? topPriorityEffects[topPriorityEffects.length - 1]
+        : activeEffects.length > 0
+        ? activeEffects[activeEffects.length - 1]
+        : null;
 
     // Get autoscroller effect (should be at index 0)
     const autoscrollerEffect = activeEffects.find(
@@ -176,6 +182,40 @@ export function Camera() {
     setIsControlled,
     autoscrollerZ,
   ]);
+
+  // Handle spacebar zoom
+  useEffect(() => {
+    const addEffect = useCameraStore.getState().addEffect;
+    const removeEffect = useCameraStore.getState().removeEffect;
+    const SPACEBAR_ZOOM_ID = "spacebar-zoom";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !e.repeat) {
+        e.preventDefault();
+        addEffect(
+          { id: SPACEBAR_ZOOM_ID, zoom: 0.3, smooth: true },
+          { topPriority: true }
+        );
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        removeEffect(SPACEBAR_ZOOM_ID);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      // Clean up effect on unmount
+      removeEffect(SPACEBAR_ZOOM_ID);
+    };
+  }, []);
 
   // Update camera position and zoom with smooth motion
   useFrame(() => {
