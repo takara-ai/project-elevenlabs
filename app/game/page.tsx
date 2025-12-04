@@ -10,6 +10,7 @@ import { useGameStore, GamePhase } from "../lib/state-management/states";
 import { useCaptions } from "../lib/speech/captions";
 import { useTriggerUIStore } from "../_scene/store/trigger-ui";
 import { AutoscrollButton } from "../_scene/components/autoscroll-button";
+import { game } from "../lib/game/controller";
 
 const FADE_DURATION_MS = 2000;
 const FADE_INTERVAL_MS = 50;
@@ -38,6 +39,11 @@ export default function Home() {
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastPlayedActionSoundRef = useRef<string | null>(null);
   const narratorAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Reset game state on page load
+  useEffect(() => {
+    game.reset();
+  }, []);
 
   // Synced captions for narrator voice
   const { visibleText: captionText } = useCaptions(

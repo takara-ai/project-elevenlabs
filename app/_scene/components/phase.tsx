@@ -366,7 +366,7 @@ function ActionText({
 
   const LINE_HEIGHT = 0.28;
   const LINE_OFFSET = 0.6;
-  const FONT_SIZE = 0.25;
+  const FONT_SIZE = 0.23;
 
   return (
     <group>
@@ -379,7 +379,7 @@ function ActionText({
             position[2] + LINE_OFFSET + i * LINE_HEIGHT,
           ]}
           rotation={[-Math.PI / 2, 0, 0]}
-          font="/black-vesper.ttf"
+          font="/young.ttf"
           fontSize={FONT_SIZE}
           color="#fff"
           anchorX="center"

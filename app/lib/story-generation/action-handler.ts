@@ -27,7 +27,7 @@ const StorySchema = z.object({
   askAction: z
     .string()
     .describe(
-      "A sentence to ask the user to choose an action, e.g. 'What do you do?' or 'What direction do you choose?'"
+      "A sentence to ask the user to choose an action, e.g. 'What direction do you choose?'"
     ),
 });
 
