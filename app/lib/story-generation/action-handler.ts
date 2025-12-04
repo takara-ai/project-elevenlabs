@@ -80,6 +80,8 @@ export async function handleAction(
       : generateObject({
           model: anthropic("claude-sonnet-4-5-20250929"),
           schema: StorySchema,
+          schemaName: "StoryResponse",
+          schemaDescription: "The story continuation with narrative, actions, and mood",
           messages,
         }).then((r) => ({ ...r, cached: false })),
     generateActionSoundEffect(actionSoundPrompt),
