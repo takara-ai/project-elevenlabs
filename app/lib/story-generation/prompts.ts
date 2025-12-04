@@ -23,10 +23,7 @@ ACTION CHOICES:
 VOICE DIRECTION:
 Write the narrative with embedded audio tags for expressive speech synthesis.
 
-Available audio tags (use sparingly but effectively):
-- Emotions: [thoughtful], [excited], [curious], [worried], [mysterious], [dramatic]
-- Delivery: [whispers], [softly], [urgently]
-- Non-verbal: [sighs], [exhales], [short pause], [long pause]
+
 
 Text formatting for emphasis:
 - Use CAPITALS for emphasized words
@@ -34,7 +31,7 @@ Text formatting for emphasis:
 - Use proper punctuation for natural rhythm
 
 Example narrative style:
-"[mysterious] The door creaked open... revealing NOTHING but darkness beyond. [short pause] And yet... [whispers] something was watching."
+"The door creaked open... revealing NOTHING but darkness beyond.And yet... something was watching."
 
 Keep tags natural and sparse - one or two per paragraph maximum. The text must read naturally.`
 
