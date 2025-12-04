@@ -1,5 +1,5 @@
-export { generateSoundEffect, generateActionSoundEffect } from './generate'
-export { buildSoundstagePrompt, buildActionSoundPrompt } from './prompts'
+export { generateSoundEffect, generateActionSoundEffect, generateMoodMusic } from './generate'
+export { buildSoundstagePrompt, buildActionSoundPrompt, buildMoodMusicPrompt } from './prompts'
 export { 
   addSoundEffectEntry, 
   findSoundEffectByPrompt, 

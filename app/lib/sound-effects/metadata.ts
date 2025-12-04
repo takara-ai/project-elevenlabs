@@ -5,8 +5,9 @@ import { list, put } from '@vercel/blob'
 // Separate metadata files for different sound effect types
 const SOUNDSTAGE_METADATA_FILENAME = 'soundstage-effects-metadata.json'
 const ACTION_METADATA_FILENAME = 'action-effects-metadata.json'
+const MOOD_METADATA_FILENAME = 'mood-music-metadata.json'
 
-export type SoundEffectType = 'soundstage' | 'action'
+export type SoundEffectType = 'soundstage' | 'action' | 'mood'
 
 export interface SoundEffectEntry {
   prompt: string
@@ -20,7 +21,9 @@ interface MetadataFile {
 }
 
 function getMetadataFilename(type: SoundEffectType): string {
-  return type === 'soundstage' ? SOUNDSTAGE_METADATA_FILENAME : ACTION_METADATA_FILENAME
+  if (type === 'soundstage') return SOUNDSTAGE_METADATA_FILENAME
+  if (type === 'mood') return MOOD_METADATA_FILENAME
+  return ACTION_METADATA_FILENAME
 }
 
 /**
