@@ -33,7 +33,7 @@ export interface StoryEntry {
   id: string;
   narrativeText: string;
   actions: string[];
-  audioBase64: string | null;
+  audioUrl: string | null;
   alignment: Alignment | null;
   timestamp: number;
 }
@@ -94,7 +94,7 @@ export interface GameActions {
   _setStory: (
     narrativeText: string,
     actions: string[],
-    audioBase64: string | null,
+    audioUrl: string | null,
     alignment: Alignment | null,
     setPhase?: boolean
   ) => void;
@@ -161,7 +161,7 @@ export const useGameStore = create<GameState & GameActions>()(
       _setStory: (
         narrativeText,
         actions,
-        audioBase64,
+        audioUrl,
         alignment,
         setPhase = true
       ) => {
@@ -170,7 +170,7 @@ export const useGameStore = create<GameState & GameActions>()(
           id: generateId(),
           narrativeText,
           actions,
-          audioBase64,
+          audioUrl,
           alignment,
           timestamp: Date.now(),
         };
@@ -303,7 +303,7 @@ export const useGameStore = create<GameState & GameActions>()(
                   "Select a genre and setting to begin your journey.",
                 actions: selected,
                 alignment: null,
-                audioBase64: null,
+                audioUrl: null,
                 timestamp: new Date(0).getTime(),
               },
             ],

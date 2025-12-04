@@ -70,7 +70,7 @@ export default function Home() {
 
   // Play narrator audio after delay (to let action sound effect play first)
   useEffect(() => {
-    if (!currentStory?.audioBase64 || !currentStory?.id) return;
+    if (!currentStory?.audioUrl || !currentStory?.id) return;
 
     // Skip if already narrated this story
     if (currentStory.id === lastNarratedStoryIdRef.current) return;
@@ -94,7 +94,7 @@ export default function Home() {
         clearTimeout(narratorDelayTimeoutRef.current);
       }
     };
-  }, [currentStory?.audioBase64, currentStory?.id]);
+  }, [currentStory?.audioUrl, currentStory?.id]);
 
   // Fade out background music smoothly
   const fadeOutBackgroundMusic = useCallback(() => {
@@ -288,7 +288,7 @@ export default function Home() {
       audioRef.current
         .play()
         .then(() => setAudioPlaying(true))
-        .catch(() => {});
+        .catch(() => { });
     }
 
     setSplashFading(true);
@@ -309,27 +309,25 @@ export default function Home() {
 
   return (
     <div
-      className={`relative flex h-full w-full items-center justify-center overflow-hidden ${
-        triggerActive && !showSplash ? "cursor-pointer" : ""
-      }`}
+      className={`relative flex h-full w-full items-center justify-center overflow-hidden ${triggerActive && !showSplash ? "cursor-pointer" : ""
+        }`}
       onClick={handleTriggerClick}
     >
       <Leva collapsed hidden={!params.get("debug")} />
       <audio ref={audioRef} src="/audio/background.mp3" loop />
 
       {/* Narrator voice audio - hidden, plays after delay to let action sound finish */}
-      {currentStory?.audioBase64 && (
+      {currentStory?.audioUrl && (
         <audio
           ref={narratorAudioRef}
-          src={`data:audio/mpeg;base64,${currentStory.audioBase64}`}
+          src={currentStory.audioUrl}
           className="hidden"
         />
       )}
 
       <div
-        className={`h-full w-full transition-opacity duration-700 ease-out ${
-          canvasVisible ? "opacity-100" : "opacity-0"
-        }`}
+        className={`h-full w-full transition-opacity duration-700 ease-out ${canvasVisible ? "opacity-100" : "opacity-0"
+          }`}
       >
         <Canvas className="h-full w-full">
           <color attach="background" args={["#000000"]} />

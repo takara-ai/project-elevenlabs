@@ -19,7 +19,7 @@ export interface ActionRequest {
 export interface ActionResult {
   narrativeText: string;
   actions: string[];
-  audioBase64: string | null;
+  audioUrl: string | null;
   alignment: Alignment | null;
   actionSoundUrl: string | null;
   mood: MoodType;

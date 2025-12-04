@@ -4,7 +4,7 @@ import { list, put } from '@vercel/blob'
 
 // Metadata filenames for different cache types
 const LLM_CACHE_FILENAME = 'llm-response-cache.json'
-const TTS_CACHE_FILENAME = 'tts-response-cache.json'
+const TTS_CACHE_FILENAME = 'tts-url-cache.json'
 
 export type CacheType = 'llm' | 'tts'
 
