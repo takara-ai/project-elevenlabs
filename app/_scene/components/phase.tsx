@@ -1,17 +1,13 @@
 "use client";
 
-import { add } from "@/app/lib/math";
-import {
-  HistoryEntry,
-  GamePhase,
-  useGameStore,
-} from "@/app/lib/state-management/states";
 import { game } from "@/app/lib/game/controller";
+import { add } from "@/app/lib/math";
+import { HistoryEntry } from "@/app/lib/state-management/states";
 import { Text } from "@react-three/drei";
 import { useState } from "react";
-import { TriggerCollider } from "./trigger-collider";
 import { useCameraStore } from "../store/camera";
 import { CurverLine, StraitLine } from "./line";
+import { TriggerCollider } from "./trigger-collider";
 
 const LINE_HEIGHT = 0.05;
 export const PHASE_HEIGHT = 12;
@@ -46,7 +42,8 @@ export function Phase({
   const addEffect = useCameraStore((state) => state.addEffect);
   const removeEffect = useCameraStore((state) => state.removeEffect);
   // Generate unique IDs for this phase's triggers
-  const phaseId = phase.id;
+  const phaseId =
+    phase.id + "-" + offset[0] + "-" + offset[1] + "-" + offset[2];
   const leftTriggerId = `${phaseId}-left`;
   const centerTriggerId = `${phaseId}-center`;
   const rightTriggerId = `${phaseId}-right`;
@@ -67,6 +64,25 @@ export function Phase({
             emissiveIntensity={1}
           />
         </mesh>
+        <TriggerCollider
+          position={add(offset, [
+            0,
+            LINE_HEIGHT,
+            PHASE_HEIGHT - BRANCH_HEIGHT / 2,
+          ])}
+          size={[COLUMN_WIDTH * 4, 3, BRANCH_HEIGHT + 4]}
+          id={phaseId}
+          onEnter={() => {
+            addEffect({
+              id: phaseId,
+              zoom: 0.6,
+              smooth: true,
+            });
+          }}
+          onExit={() => {
+            removeEffect(phaseId);
+          }}
+        />
       </>
     );
   }
@@ -85,25 +101,18 @@ export function Phase({
 
     // Trigger box size for option selection
     const OPTION_TRIGGER_SIZE: [number, number, number] = [3, 3, 3];
-    // Trigger box for the entire story phase area (for camera zoom)
-    const STORY_TRIGGER_SIZE: [number, number, number] = [
-      COLUMN_WIDTH * 6,
-      5,
-      BRANCH_HEIGHT + 4,
-    ];
-    const storyTriggerPos = add(offset, [
-      0,
-      LINE_HEIGHT,
-      PHASE_HEIGHT - BRANCH_HEIGHT / 2,
-    ]);
 
     return (
       <>
         {/* Main story phase trigger - zooms camera when player enters */}
         {isCurrentPhase && (
           <TriggerCollider
-            position={storyTriggerPos}
-            size={STORY_TRIGGER_SIZE}
+            position={add(offset, [
+              0,
+              LINE_HEIGHT,
+              PHASE_HEIGHT - BRANCH_HEIGHT / 2,
+            ])}
+            size={[COLUMN_WIDTH * 4, 3, BRANCH_HEIGHT + 4]}
             id={storyTriggerId}
             onEnter={() => {
               // Zoom camera when entering story phase
@@ -126,22 +135,28 @@ export function Phase({
           size={OPTION_TRIGGER_SIZE}
           id={leftTriggerId}
           onEnter={() => {
-            if (selectedChoice !== null) return;
-            setHoveredOption("left");
-            // Center camera on left choice, keep zoom at 0.6
+            // Always allow camera movement
             addEffect({
               id: leftTriggerId,
               zoom: 0.6,
               targetPosition: leftOptionPos,
               smooth: true,
             });
+            // Only update hover state if decision hasn't been taken
+            if (selectedChoice === null) {
+              setHoveredOption("left");
+            }
           }}
           onExit={() => {
-            if (selectedChoice !== null) return;
-            setHoveredOption((prev) => (prev === "left" ? null : prev));
+            // Always remove camera effect
             removeEffect(leftTriggerId);
+            // Only update hover state if decision hasn't been taken
+            if (selectedChoice === null) {
+              setHoveredOption((prev) => (prev === "left" ? null : prev));
+            }
           }}
           onTrigger={() => {
+            // Only trigger decision if it hasn't been taken yet
             if (selectedChoice !== null) return;
             if (isCurrentPhase && phase.actions[0]) {
               game.act({ text: phase.actions[0], choiceIndex: 0 });
@@ -156,22 +171,28 @@ export function Phase({
           size={OPTION_TRIGGER_SIZE}
           id={centerTriggerId}
           onEnter={() => {
-            if (selectedChoice !== null) return;
-            setHoveredOption("center");
-            // Center camera on center choice, keep zoom at 0.6
+            // Always allow camera movement
             addEffect({
               id: centerTriggerId,
               zoom: 0.6,
               targetPosition: centerOptionPos,
               smooth: true,
             });
+            // Only update hover state if decision hasn't been taken
+            if (selectedChoice === null) {
+              setHoveredOption("center");
+            }
           }}
           onExit={() => {
-            if (selectedChoice !== null) return;
-            setHoveredOption((prev) => (prev === "center" ? null : prev));
+            // Always remove camera effect
             removeEffect(centerTriggerId);
+            // Only update hover state if decision hasn't been taken
+            if (selectedChoice === null) {
+              setHoveredOption((prev) => (prev === "center" ? null : prev));
+            }
           }}
           onTrigger={() => {
+            // Only trigger decision if it hasn't been taken yet
             if (selectedChoice !== null) return;
             if (isCurrentPhase && phase.actions[1]) {
               game.act({ text: phase.actions[1], choiceIndex: 1 });
@@ -186,22 +207,28 @@ export function Phase({
           size={OPTION_TRIGGER_SIZE}
           id={rightTriggerId}
           onEnter={() => {
-            if (selectedChoice !== null) return;
-            setHoveredOption("right");
-            // Center camera on right choice, keep zoom at 0.6
+            // Always allow camera movement
             addEffect({
               id: rightTriggerId,
               zoom: 0.6,
               targetPosition: rightOptionPos,
               smooth: true,
             });
+            // Only update hover state if decision hasn't been taken
+            if (selectedChoice === null) {
+              setHoveredOption("right");
+            }
           }}
           onExit={() => {
-            if (selectedChoice !== null) return;
-            setHoveredOption((prev) => (prev === "right" ? null : prev));
+            // Always remove camera effect
             removeEffect(rightTriggerId);
+            // Only update hover state if decision hasn't been taken
+            if (selectedChoice === null) {
+              setHoveredOption((prev) => (prev === "right" ? null : prev));
+            }
           }}
           onTrigger={() => {
+            // Only trigger decision if it hasn't been taken yet
             if (selectedChoice !== null) return;
             if (!isCurrentPhase) return;
             const prompt = window.prompt("What do you want to do?");

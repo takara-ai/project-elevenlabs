@@ -64,7 +64,6 @@ export function TriggerCollider({
   debug = true,
   showProgress = false,
 }: TriggerColliderProps) {
-  const isInsideRef = useRef(false);
   const boxRef = useRef<THREE.Box3 | null>(null);
   const timeInsideRef = useRef(0);
   const hasTriggeredRef = useRef(false);
@@ -94,17 +93,15 @@ export function TriggerCollider({
     const isCurrentlyInside = boxRef.current.containsPoint(playerPos);
 
     // Detect enter/exit transitions
-    if (isCurrentlyInside && !isInsideRef.current) {
+    if (isCurrentlyInside && !isInside) {
       // Just entered
-      isInsideRef.current = true;
       setIsInside(true);
       timeInsideRef.current = 0;
       hasTriggeredRef.current = false;
       setHasTriggered(false);
       onEnter?.();
-    } else if (!isCurrentlyInside && isInsideRef.current) {
+    } else if (!isCurrentlyInside && isInside) {
       // Just exited
-      isInsideRef.current = false;
       setIsInside(false);
       timeInsideRef.current = 0;
 
@@ -177,7 +174,7 @@ export function TriggerCollider({
             new THREE.Vector3(...corners[startIdx]),
             new THREE.Vector3(...corners[endIdx]),
           ]}
-          color="green"
+          color={isInside ? "green" : "gray"}
           lineWidth={LINE_WIDTH}
         />
       ))}

@@ -16,7 +16,8 @@ export default function Home() {
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.play()
+      audioRef.current
+        .play()
         .then(() => setAudioPlaying(true))
         .catch(() => setAudioPlaying(false));
     }
@@ -24,9 +25,10 @@ export default function Home() {
 
   const handleDismissSplash = () => {
     if (audioRef.current && !audioPlaying) {
-      audioRef.current.play()
+      audioRef.current
+        .play()
         .then(() => setAudioPlaying(true))
-        .catch(() => { });
+        .catch(() => {});
     }
     setShowSplash(false);
   };
@@ -41,19 +43,17 @@ export default function Home() {
       </Canvas>
 
       <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
-        <Button onClick={() => game.start()}>
-          start
-        </Button>
         <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
-          <Button
-            onClick={() => {
-              game.start();
-            }}
-          >
-            start
-          </Button>
-          <pre className="p-4 bg-black/50 text-white max-w-sm max-h-[20rem] text-xs overflow-x-auto">
-            {JSON.stringify(state, null, 2)}
+          <pre className="p-4 bg-black/50 text-white max-w-sm max-h-80 text-xs overflow-x-auto">
+            {JSON.stringify(
+              {
+                progress: state.loadingProgress,
+                phase: state.phase,
+                historyLength: state.history.length,
+              },
+              null,
+              2
+            )}
           </pre>
         </div>
       </div>
@@ -63,7 +63,9 @@ export default function Home() {
           <div className="relative z-10 flex flex-col items-center gap-12">
             <Title />
             <Prompt>
-              {audioPlaying ? "Click anywhere to begin" : "Click to enable audio"}
+              {audioPlaying
+                ? "Click anywhere to begin"
+                : "Click to enable audio"}
             </Prompt>
           </div>
         </SplashContainer>
