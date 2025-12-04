@@ -3,8 +3,11 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useCameraStore } from "../store/camera";
 import { useRef, useState, useEffect } from "react";
+import { useGameStore } from "@/app/lib/state-management/states";
+import { PHASE_HEIGHT } from "./phase";
 
 const AUTOSCROLL_SPEED = 0.005; // Speed of autoscroll (units per frame)
+const Z_OFFSET = 3;
 
 export function AutoScrollerTarget({ debug = true }: { debug?: boolean }) {
   const { camera } = useThree();
@@ -14,6 +17,9 @@ export function AutoScrollerTarget({ debug = true }: { debug?: boolean }) {
   const addEffect = useCameraStore((state) => state.addEffect);
   const removeEffect = useCameraStore((state) => state.removeEffect);
   const updateEffect = useCameraStore((state) => state.updateEffect);
+  const maxZ = useGameStore((state) => {
+    return state.history.length * PHASE_HEIGHT + Z_OFFSET;
+  });
 
   // Track the autoscroller position (X and Z)
   const currentZ = useRef(autoscrollerZ);
@@ -67,7 +73,11 @@ export function AutoScrollerTarget({ debug = true }: { debug?: boolean }) {
   useFrame(() => {
     if (!isControlled) {
       // Only update position when not controlled
-      currentZ.current += AUTOSCROLL_SPEED;
+      if (currentZ.current < maxZ) {
+        currentZ.current += AUTOSCROLL_SPEED;
+      } else {
+        currentZ.current = maxZ;
+      }
       // currentX.current will be updated in the future for X movement
       setAutoscrollerZ(currentZ.current);
 

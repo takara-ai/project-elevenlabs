@@ -17,6 +17,13 @@ export const COLUMN_WIDTH = 4;
 const BRANCH_HEIGHT = 5;
 const SMOOTHING = 3;
 
+// Helper function to play sound effects
+function playSound(src: string, volume: number = 0.5) {
+  const audio = new Audio(src);
+  audio.volume = volume;
+  audio.play().catch(console.error);
+}
+
 function choiceToOption(
   choice: number | null
 ): "left" | "center" | "right" | null {
@@ -178,8 +185,9 @@ export function Phase({
               targetPosition: leftOptionPos,
               smooth: true,
             });
-            // Only update hover state if decision hasn't been taken
+            // Only update hover state and play sound if decision hasn't been taken
             if (selectedChoice === null) {
+              playSound("/select.wav", 0.5);
               setHoveredOption("left");
             }
           }}
@@ -194,6 +202,8 @@ export function Phase({
           onTrigger={() => {
             // Only trigger decision if it hasn't been taken yet
             if (selectedChoice !== null) return;
+            // Play choose sound when triggering option
+            playSound("/choose.wav", 0.5);
             if (isCurrentPhase && phase.actions[0]) {
               game.act({ text: phase.actions[0], choiceIndex: 0 });
             }
@@ -218,8 +228,9 @@ export function Phase({
               targetPosition: centerOptionPos,
               smooth: true,
             });
-            // Only update hover state if decision hasn't been taken
+            // Only update hover state and play sound if decision hasn't been taken
             if (selectedChoice === null) {
+              playSound("/select.wav", 0.5);
               setHoveredOption("center");
             }
           }}
@@ -234,6 +245,8 @@ export function Phase({
           onTrigger={() => {
             // Only trigger decision if it hasn't been taken yet
             if (selectedChoice !== null) return;
+            // Play choose sound when triggering option
+            playSound("/choose.wav", 0.5);
             if (isCurrentPhase && phase.actions[1]) {
               game.act({ text: phase.actions[1], choiceIndex: 1 });
             }
@@ -258,8 +271,9 @@ export function Phase({
               targetPosition: rightOptionPos,
               smooth: true,
             });
-            // Only update hover state if decision hasn't been taken
+            // Only update hover state and play sound if decision hasn't been taken
             if (selectedChoice === null) {
+              playSound("/select.wav", 0.5);
               setHoveredOption("right");
             }
           }}
@@ -274,6 +288,8 @@ export function Phase({
           onTrigger={() => {
             // Only trigger decision if it hasn't been taken yet
             if (selectedChoice !== null) return;
+            // Play choose sound when triggering option
+            playSound("/choose.wav", 0.5);
             if (!isCurrentPhase) return;
             const prompt = window.prompt("What do you want to do?");
             if (prompt) {

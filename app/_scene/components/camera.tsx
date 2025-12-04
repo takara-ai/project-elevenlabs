@@ -23,7 +23,7 @@ export function Camera() {
   );
 
   const controls = useControls("Camera", {
-    position: { value: [0, 5, 4], min: -50, max: 50, step: 0.1 },
+    position: { value: [0, 5, -3], min: -50, max: 50, step: 0.1 },
     rotation: { value: [-0.95, 0, 0], min: -Math.PI, max: Math.PI, step: 0.01 },
     fov: { value: 41, min: 1, max: 180, step: 1 },
     zoom: { value: 1, min: 0.1, max: 10, step: 0.1 },
