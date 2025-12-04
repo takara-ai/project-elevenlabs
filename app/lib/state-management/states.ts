@@ -116,20 +116,7 @@ const initialState: GameState = {
   starterStoryId: null,
   customSetting: null,
   currentStory: null,
-  history: [
-    {
-      type: "story",
-      id: "initial-story",
-      narrativeText: "Select a genre and setting to begin your journey.",
-      actions: [
-        "Year is 1692 - Investigate strange occurrences at Blackwood Estate in a fantasy world",
-        "Year is 2193 - Survive aboard a malfunctioning space station in a post-apocalyptic world",
-      ],
-      alignment: null,
-      audioBase64: null,
-      timestamp: new Date(0).getTime(),
-    },
-  ],
+  history: [],
   loadingProgress: 0,
   error: null,
   soundstageUrl: null,
@@ -266,7 +253,65 @@ export const useGameStore = create<GameState & GameActions>()(
           "_setActionSound"
         ),
 
-      _reset: () => set(initialState, false, "_reset"),
+      _reset: () => {
+        // Diverse entry points across different universes and genres
+        const entryPoints = [
+          "Magical fantasy with dark mages to defeat",
+          "Post-apocalyptic space station survival",
+          "Noir detective story in Prohibition-era Chicago",
+          "Floating cloud city political intrigue",
+          "Cursed pirate ship in the Caribbean",
+          "Cyberpunk corporate megacorp infiltration",
+          "Medieval alchemist seeking plague cure",
+          "Abandoned research facility on Mars",
+          "Victorian London consulting detective mysteries",
+          "Starship navigating uncharted nebula",
+          "Samurai castle defense in feudal Japan",
+          "Sentient AI city neural network hack",
+          "Lovecraftian horrors in coastal New England",
+          "Radioactive wasteland scavenger survival",
+          "French Revolution spy double agent",
+          "Ancient alien ruins beneath exoplanet ocean",
+          "World War II POW camp escape",
+          "Mech suit war against rogue AI",
+          "Elizabethan court conspiracy",
+          "Zombie apocalypse in megacity",
+          "Amazon rainforest lost civilization search",
+          "Space colony peace negotiations",
+          "Viking warrior during Norman conquest",
+          "Biopunk corporate espionage",
+          "Wild West supernatural creature hunt",
+          "Retro-futuristic post-nuclear society rebuild",
+          "Constantinople siege defense",
+          "Virtual reality blurring with simulation",
+          "American Revolution double agent",
+          "Deep space asteroid mining operation",
+        ];
+
+        // Randomly select 2 unique entry points
+        const shuffled = [...entryPoints].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, 2);
+
+        set(
+          {
+            ...initialState,
+            history: [
+              {
+                type: "story",
+                id: "initial-story",
+                narrativeText:
+                  "Select a genre and setting to begin your journey.",
+                actions: selected,
+                alignment: null,
+                audioBase64: null,
+                timestamp: new Date(0).getTime(),
+              },
+            ],
+          },
+          false,
+          "_reset"
+        );
+      },
     }),
     { name: "game-store" }
   )
