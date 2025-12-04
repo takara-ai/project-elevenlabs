@@ -14,6 +14,8 @@ import {
   type Alignment,
 } from "../state-management/states";
 import type { ActionResult } from "./dto";
+import { getCached, setCache } from "../cache/blob-cache";
+import { createCacheKey } from "../cache/hash";
 
 const DISABLE_NARRATOR = process.env.DISABLE_NARRATOR === "true";
 
@@ -40,10 +42,19 @@ const StorySchema = z.object({
   ),
 });
 
+// Type for cached LLM story responses
+interface CachedStoryResponse {
+  narrativeText: string;
+  actions: string[];
+  askAction: string;
+  mood: MoodType;
+}
+
 /**
  * Handle action submission - generates story, action sound, and mood music in parallel
  * Narrator speech runs after story text is generated (needs the text)
  * Mood music only regenerates when the mood changes from the previous state
+ * LLM and TTS responses are cached to avoid regeneration
  */
 export async function handleAction(
   actionText: string,
@@ -54,17 +65,43 @@ export async function handleAction(
   // Build action sound prompt
   const actionSoundPrompt = buildActionSoundPrompt(actionText);
 
+  // Create cache key from the full message context
+  const messages = buildNarratorMessages(history);
+  const llmCacheKey = createCacheKey(messages);
+
+  // Check LLM cache first
+  const cachedStory = await getCached<CachedStoryResponse>("llm", llmCacheKey);
+
   // Run Anthropic story generation AND action sound effect in parallel
+  // Skip LLM call if we have cached response
   const [storyResult, actionSoundResult] = await Promise.all([
-    generateObject({
-      model: anthropic("claude-sonnet-4-5-20250929"),
-      schema: StorySchema,
-      messages: buildNarratorMessages(history),
-    }),
+    cachedStory
+      ? Promise.resolve({ object: cachedStory, cached: true })
+      : generateObject({
+          model: anthropic("claude-sonnet-4-5-20250929"),
+          schema: StorySchema,
+          messages,
+        }).then((r) => ({ ...r, cached: false })),
     generateActionSoundEffect(actionSoundPrompt),
   ]);
 
-  const { object } = storyResult;
+  const { object, cached: llmCached } = storyResult as {
+    object: CachedStoryResponse;
+    cached: boolean;
+  };
+
+  // Cache LLM response if it was freshly generated
+  if (!llmCached) {
+    await setCache("llm", llmCacheKey, {
+      narrativeText: object.narrativeText,
+      actions: object.actions,
+      askAction: object.askAction,
+      mood: object.mood,
+    });
+    console.log("[LLM] Cached new story response");
+  } else {
+    console.log("[LLM] Cache hit for story");
+  }
   const newMood = object.mood as MoodType;
 
   // Generate mood music if mood changed (or first story)
