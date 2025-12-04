@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { Prompt, SplashContainer, Title } from "../../components/splash";
 import { Subtitles } from "../../components/subtitles";
 import { TriggerOverlay } from "../../components/trigger-overlay";
@@ -13,6 +13,11 @@ import { AutoscrollButton } from "../_scene/components/autoscroll-button";
 import { game } from "../lib/game/controller";
 import { Leva } from "leva";
 import { useSearchParams } from "next/navigation";
+
+function LevaControls() {
+  const params = useSearchParams();
+  return <Leva collapsed hidden={!params.get("debug")} />;
+}
 
 const FADE_DURATION_MS = 2000;
 const FADE_INTERVAL_MS = 50;
@@ -33,8 +38,6 @@ export default function Home() {
     label: triggerLabel,
     trigger: triggerAction,
   } = useTriggerUIStore();
-
-  const params = useSearchParams();
 
   const [showSplash, setShowSplash] = useState(true);
   const [splashFading, setSplashFading] = useState(false);
@@ -313,7 +316,9 @@ export default function Home() {
         }`}
       onClick={handleTriggerClick}
     >
-      <Leva collapsed hidden={!params.get("debug")} />
+      <Suspense fallback={null}>
+        <LevaControls />
+      </Suspense>
       <audio ref={audioRef} src="/audio/background.mp3" loop />
 
       {/* Narrator voice audio - hidden, plays after delay to let action sound finish */}
