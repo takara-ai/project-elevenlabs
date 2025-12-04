@@ -1,3 +1,6 @@
+import { getCached, setCache } from '../cache/blob-cache'
+import { createCacheKey } from '../cache/hash'
+
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY
 
 export interface Alignment {
@@ -9,15 +12,25 @@ export interface Alignment {
 export interface TTSWithTimestampsResult {
   audioBase64: string
   alignment: Alignment
+  cached?: boolean
 }
 
 /**
  * Generate speech with character-level timestamps from ElevenLabs
+ * Checks blob cache first to avoid regenerating identical speech
  */
 export async function generateSpeechWithTimestamps(
   text: string,
   voiceId: string = 'AeRdCCKzvd23BpJoofzx'
 ): Promise<TTSWithTimestampsResult> {
+  // Check cache first
+  const cacheKey = createCacheKey({ text, voiceId })
+  const cached = await getCached<TTSWithTimestampsResult>('tts', cacheKey)
+  if (cached) {
+    console.log('[TTS] Cache hit for:', text.slice(0, 50) + '...')
+    return { ...cached, cached: true }
+  }
+
   if (!ELEVENLABS_API_KEY) {
     throw new Error('ELEVENLABS_API_KEY not set')
   }
@@ -48,9 +61,15 @@ export async function generateSpeechWithTimestamps(
 
   const data = await response.json()
   
-  return {
+  const result: TTSWithTimestampsResult = {
     audioBase64: data.audio_base64,
     alignment: data.alignment,
   }
+
+  // Store in cache
+  await setCache('tts', cacheKey, result)
+  console.log('[TTS] Cached new response for:', text.slice(0, 50) + '...')
+
+  return { ...result, cached: false }
 }
 
