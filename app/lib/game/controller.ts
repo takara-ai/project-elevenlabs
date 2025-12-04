@@ -102,86 +102,20 @@ export const game = {
     log("act", { text, choiceIndex });
 
     const store = useGameStore.getState();
-    const { cycleIndex, history } = store;
-
-    // Check if game has started by looking for any action in history
-    const hasStarted = history.some((h) => h.type === "action");
-
-    // If game hasn't started, initialize it using the initial history entry
-    if (!hasStarted) {
-      // Get the setting from the initial story entry
-      const initialStory = history.find((h) => h.type === "story") as
-        | StoryEntry
-        | undefined;
-
-      if (!initialStory) {
-        throw new Error("No initial story entry found in history");
-      }
-
-      const setting = initialStory.narrativeText || "";
-
-      // Initialize game (this resets state)
-      await startGame(setting);
-
-      // Now add the action and process it
-      const updatedStore = useGameStore.getState();
-      updatedStore._addAction(text, choiceIndex, false);
-      updatedStore._setGenerating(true);
-      updatedStore._setActionSound(null, true);
-      updatedStore._setLoading(30);
-
-      try {
-        const history = getHistoryContext();
-        updatedStore._setLoading(60);
-
-        const {
-          narrativeText,
-          actions,
-          audioBase64,
-          alignment,
-          actionSoundUrl,
-        } = await handleAction(setting, text, history, updatedStore.cycleIndex);
-
-        log("generated", {
-          narrativeText: narrativeText.slice(0, 50) + "...",
-          actions,
-          hasAudio: !!audioBase64,
-          hasAlignment: !!alignment,
-          hasActionSound: !!actionSoundUrl,
-        });
-
-        useGameStore.getState()._setActionSound(actionSoundUrl, false);
-        useGameStore
-          .getState()
-          ._setStory(narrativeText, actions, audioBase64, alignment, true);
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Generation failed";
-        log("error", message);
-        useGameStore.getState()._setError(message);
-        throw err;
-      } finally {
-        useGameStore.getState()._setGenerating(false);
-      }
-      return;
-    }
+    const { history } = store;
 
     // Regular action flow - get setting from history
-    const setting = getSettingFromHistory();
-    if (!setting) throw new Error("No story configured");
-
     store._addAction(text, choiceIndex, false);
     store._setGenerating(true);
     store._setActionSound(null, true);
     store._setLoading(30);
 
     try {
-      const history = getHistoryContext();
       store._setLoading(60);
 
       // Single server action that runs Anthropic + sound effect in parallel
       const { narrativeText, actions, audioBase64, alignment, actionSoundUrl } =
-        await handleAction(setting, text, history, cycleIndex);
+        await handleAction(text, history);
 
       log("generated", {
         narrativeText: narrativeText.slice(0, 50) + "...",

@@ -10,18 +10,24 @@ import {
   generateSpeechWithTimestamps,
   type Alignment,
 } from "../speech/elevenlabs-tts";
+import { HistoryEntry } from "../state-management/states";
 
 const DISABLE_NARRATOR = process.env.DISABLE_NARRATOR === "true";
 
-const StorySchema = z.object({
+export const StorySchema = z.object({
   narrativeText: z
     .string()
     .describe("Narrator describes the scene (2-3 sentences)"),
   actions: z
     .array(z.string())
-    .length(3)
+    .length(2)
     .describe(
-      "3 bold, dramatic action choices that significantly advance the story - no cautious half-steps"
+      "2 bold, dramatic action choices that significantly advance the story - no cautious half-steps"
+    ),
+  askAction: z
+    .string()
+    .describe(
+      "A sentence to ask the user to choose an action, e.g. 'What do you do?' or 'What direction do you choose?'"
     ),
 });
 
@@ -38,10 +44,8 @@ export interface ActionResult {
  * Narrator speech runs after story text is generated (needs the text)
  */
 export async function handleAction(
-  setting: string,
   actionText: string,
-  history: { text: string; type: "story" | "action" }[],
-  cycleIndex: number
+  history: HistoryEntry[]
 ): Promise<ActionResult> {
   // Build action sound prompt
   const actionSoundPrompt = buildActionSoundPrompt(actionText);
@@ -49,9 +53,9 @@ export async function handleAction(
   // Run Anthropic story generation AND action sound effect in parallel
   const [storyResult, actionSoundResult] = await Promise.all([
     generateObject({
-      model: anthropic("claude-3-5-haiku-latest"),
+      model: anthropic("claude-sonnet-4-5-20250929"),
       schema: StorySchema,
-      messages: buildNarratorMessages(setting, history, cycleIndex === 0),
+      messages: buildNarratorMessages(history),
     }),
     generateActionSoundEffect(actionSoundPrompt),
   ]);
@@ -63,7 +67,9 @@ export async function handleAction(
   let alignment: Alignment | null = null;
   if (!DISABLE_NARRATOR) {
     try {
-      const result = await generateSpeechWithTimestamps(object.narrativeText);
+      const result = await generateSpeechWithTimestamps(
+        object.narrativeText + " " + object.askAction
+      );
       audioBase64 = result.audioBase64;
       alignment = result.alignment;
     } catch (err) {

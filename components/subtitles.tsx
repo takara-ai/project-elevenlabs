@@ -100,7 +100,7 @@ export function Subtitles({ text }: { text: string }) {
           key={line.id}
           className="w-full text-white text-2xl font-medium tracking-wide p-4 rounded-lg max-w-3xl"
         >
-          {line.text}
+          {line.text} &nbsp;
         </p>
       ))}
     </div>
