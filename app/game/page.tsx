@@ -116,7 +116,7 @@ function Subtitles({ text }: { text: string }) {
   if (lines.length === 0) return null;
 
   return (
-    <div className="absolute bottom-20 left-0 right-0 flex flex-col items-center pointer-events-none z-40 gap-2">
+    <div className="absolute bottom-20 left-0 right-0 flex flex-col pointer-events-none z-40 gap-2">
       {lines.map(line => (
         <div
           key={line.id}
