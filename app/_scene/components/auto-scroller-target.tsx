@@ -66,7 +66,7 @@ export function AutoScrollerTarget({ debug = false }: { debug?: boolean }) {
           targetPosition: [currentX.current, 0, currentZ.current],
           smooth: true,
         },
-        0
+        { atIndex: 0 }
       );
       return () => {
         removeEffect("autoscroller");

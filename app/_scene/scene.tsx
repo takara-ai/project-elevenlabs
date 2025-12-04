@@ -14,6 +14,8 @@ import { History } from "./components/history";
 import { AutoScrollerTarget } from "./components/auto-scroller-target";
 import { Leva } from "leva";
 import { useSearchParams } from "next/navigation";
+import { OrderedDither } from "./components/shader/ordered-dither";
+import { OrderedDitherControls } from "./components/ordered-dither-controls";
 
 export function Scene() {
   const params = useSearchParams();
@@ -65,6 +67,7 @@ export function Scene() {
           luminanceSmoothing={bloom.smoothing}
         />
         <ToneMapping />
+        <OrderedDitherControls />
       </EffectComposer>
     </>
   );
