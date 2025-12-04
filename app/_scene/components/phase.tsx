@@ -97,7 +97,7 @@ export function Phase({
         />
         <TriggerCollider
           position={add(offset, [0, LINE_HEIGHT, PHASE_HEIGHT / 2])}
-          size={[COLUMN_WIDTH * 4, 3, PHASE_HEIGHT]}
+          size={[COLUMN_WIDTH * 6, 3, PHASE_HEIGHT]}
           id={phaseId}
           onEnter={() => {
             setDefaultXPosition(offset[0]);
@@ -128,7 +128,7 @@ export function Phase({
     ]);
 
     // Trigger box size for option selection
-    const OPTION_TRIGGER_SIZE: [number, number, number] = [3, 3, 3];
+    const OPTION_TRIGGER_SIZE: [number, number, number] = [4, 3, 3];
 
     const lightPosition = add(offset, [0, 8, (3 * PHASE_HEIGHT) / 4]);
 
@@ -154,7 +154,7 @@ export function Phase({
         {/* Main story phase trigger - zooms camera when player enters */}
         <TriggerCollider
           position={add(offset, [0, LINE_HEIGHT, (3 * PHASE_HEIGHT) / 4])}
-          size={[COLUMN_WIDTH * 4, 3, PHASE_HEIGHT / 2]}
+          size={[COLUMN_WIDTH * 6, 3, PHASE_HEIGHT]}
           id={storyTriggerId}
           onEnter={() => {
             // Set default X position to offset X when entering
@@ -187,7 +187,7 @@ export function Phase({
             });
             // Only update hover state and play sound if decision hasn't been taken
             if (selectedChoice === null) {
-              playSound("/select.wav", 0.5);
+              playSound("/select.wav", 0.2);
               setHoveredOption("left");
             }
           }}
@@ -230,7 +230,7 @@ export function Phase({
             });
             // Only update hover state and play sound if decision hasn't been taken
             if (selectedChoice === null) {
-              playSound("/select.wav", 0.5);
+              playSound("/select.wav", 0.2);
               setHoveredOption("center");
             }
           }}
@@ -273,7 +273,7 @@ export function Phase({
             });
             // Only update hover state and play sound if decision hasn't been taken
             if (selectedChoice === null) {
-              playSound("/select.wav", 0.5);
+              playSound("/select.wav", 0.2);
               setHoveredOption("right");
             }
           }}

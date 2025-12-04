@@ -17,7 +17,7 @@ import {
   type ActionEntry,
   type MoodType,
 } from "../state-management/states";
-import { handleAction } from "../story-generation/action-handler";
+import type { ActionResult } from "../story-generation/dto";
 import { generateSoundEffect } from "../sound-effects/generate";
 import { buildSoundstagePrompt } from "../sound-effects/prompts";
 
@@ -117,9 +117,44 @@ export const game = {
     try {
       store._setLoading(60);
 
-      // Single server action that runs Anthropic + sound effect + mood music in parallel
-      const { narrativeText, actions, audioBase64, alignment, actionSoundUrl, mood, moodMusicUrl } =
-        await handleAction(text, history, currentMood, setting);
+      // Format history for API request
+      const historyForApi = history.map((h) => ({
+        text:
+          h.type === "story"
+            ? (h as StoryEntry).narrativeText
+            : (h as ActionEntry).text,
+        type: h.type,
+      }));
+
+      // Call API route
+      const response = await fetch("/api/action", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          actionText: text,
+          history: historyForApi,
+          currentMood,
+          currentSetting: setting,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.status}`);
+      }
+
+      const result: ActionResult = await response.json();
+      const {
+        narrativeText,
+        actions,
+        audioBase64,
+        alignment,
+        actionSoundUrl,
+        mood,
+        moodMusicUrl,
+      } = result;
 
       log("generated", {
         narrativeText: narrativeText.slice(0, 50) + "...",
@@ -133,7 +168,7 @@ export const game = {
 
       // Set everything and transition to STORY
       useGameStore.getState()._setActionSound(actionSoundUrl, false);
-      
+
       // Update mood music if it changed
       if (moodMusicUrl) {
         useGameStore.getState()._setMoodMusic(moodMusicUrl, mood, false);
@@ -141,7 +176,7 @@ export const game = {
         // Mood changed but no new music URL - just update the mood
         useGameStore.getState()._setMoodMusic(null, mood, false);
       }
-      
+
       useGameStore
         .getState()
         ._setStory(narrativeText, actions, audioBase64, alignment, true);

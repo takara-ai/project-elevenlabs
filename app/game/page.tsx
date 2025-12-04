@@ -11,10 +11,12 @@ import { useCaptions } from "../lib/speech/captions";
 import { useTriggerUIStore } from "../_scene/store/trigger-ui";
 import { AutoscrollButton } from "../_scene/components/autoscroll-button";
 import { game } from "../lib/game/controller";
+import { Leva } from "leva";
+import { useSearchParams } from "next/navigation";
 
 const FADE_DURATION_MS = 2000;
 const FADE_INTERVAL_MS = 50;
-const MOOD_MUSIC_VOLUME = 0.20;
+const MOOD_MUSIC_VOLUME = 0.2;
 const CROSSFADE_DURATION_MS = 3000;
 const NARRATOR_DELAY_MS = 4000;
 
@@ -31,6 +33,8 @@ export default function Home() {
     label: triggerLabel,
     trigger: triggerAction,
   } = useTriggerUIStore();
+
+  const params = useSearchParams();
 
   const [showSplash, setShowSplash] = useState(true);
   const [splashFading, setSplashFading] = useState(false);
@@ -199,37 +203,43 @@ export default function Home() {
     moodMusicNextRef.current = newAudio;
 
     // Start playing new track
-    newAudio.play().then(() => {
-      const steps = CROSSFADE_DURATION_MS / FADE_INTERVAL_MS;
-      const volumeStep = MOOD_MUSIC_VOLUME / steps;
-      let currentStep = 0;
+    newAudio
+      .play()
+      .then(() => {
+        const steps = CROSSFADE_DURATION_MS / FADE_INTERVAL_MS;
+        const volumeStep = MOOD_MUSIC_VOLUME / steps;
+        let currentStep = 0;
 
-      const crossfadeInterval = setInterval(() => {
-        currentStep++;
+        const crossfadeInterval = setInterval(() => {
+          currentStep++;
 
-        // Fade in new track
-        newAudio.volume = Math.min(MOOD_MUSIC_VOLUME, newAudio.volume + volumeStep);
+          // Fade in new track
+          newAudio.volume = Math.min(
+            MOOD_MUSIC_VOLUME,
+            newAudio.volume + volumeStep
+          );
 
-        // Fade out old track if exists
-        if (oldAudio) {
-          oldAudio.volume = Math.max(0, oldAudio.volume - volumeStep);
-        }
-
-        if (currentStep >= steps) {
-          clearInterval(crossfadeInterval);
-
-          // Clean up old audio
+          // Fade out old track if exists
           if (oldAudio) {
-            oldAudio.pause();
-            oldAudio.src = "";
+            oldAudio.volume = Math.max(0, oldAudio.volume - volumeStep);
           }
 
-          // Swap refs
-          moodMusicRef.current = newAudio;
-          moodMusicNextRef.current = null;
-        }
-      }, FADE_INTERVAL_MS);
-    }).catch(console.error);
+          if (currentStep >= steps) {
+            clearInterval(crossfadeInterval);
+
+            // Clean up old audio
+            if (oldAudio) {
+              oldAudio.pause();
+              oldAudio.src = "";
+            }
+
+            // Swap refs
+            moodMusicRef.current = newAudio;
+            moodMusicNextRef.current = null;
+          }
+        }, FADE_INTERVAL_MS);
+      })
+      .catch(console.error);
   }, [phase, moodMusicUrl]);
 
   // Stop mood music when returning to IDLE
@@ -278,7 +288,7 @@ export default function Home() {
       audioRef.current
         .play()
         .then(() => setAudioPlaying(true))
-        .catch(() => { });
+        .catch(() => {});
     }
 
     setSplashFading(true);
@@ -299,10 +309,12 @@ export default function Home() {
 
   return (
     <div
-      className={`relative flex h-full w-full items-center justify-center overflow-hidden ${triggerActive && !showSplash ? "cursor-pointer" : ""
-        }`}
+      className={`relative flex h-full w-full items-center justify-center overflow-hidden ${
+        triggerActive && !showSplash ? "cursor-pointer" : ""
+      }`}
       onClick={handleTriggerClick}
     >
+      <Leva collapsed hidden={!params.get("debug")} />
       <audio ref={audioRef} src="/audio/background.mp3" loop />
 
       {/* Narrator voice audio - hidden, plays after delay to let action sound finish */}
@@ -315,8 +327,9 @@ export default function Home() {
       )}
 
       <div
-        className={`h-full w-full transition-opacity duration-700 ease-out ${canvasVisible ? "opacity-100" : "opacity-0"
-          }`}
+        className={`h-full w-full transition-opacity duration-700 ease-out ${
+          canvasVisible ? "opacity-100" : "opacity-0"
+        }`}
       >
         <Canvas className="h-full w-full">
           <color attach="background" args={["#000000"]} />

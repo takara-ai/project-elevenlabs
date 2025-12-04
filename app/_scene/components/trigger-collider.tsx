@@ -57,7 +57,7 @@ export function TriggerCollider({
   onExit,
   onInside,
   onTrigger,
-  debug = false,
+  debug = true,
   label,
   id,
 }: TriggerColliderProps) {

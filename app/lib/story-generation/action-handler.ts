@@ -1,16 +1,19 @@
-"use server";
-
 import { anthropic } from "@ai-sdk/anthropic";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { buildNarratorMessages } from "./prompts";
-import { generateActionSoundEffect, generateMoodMusic } from "../sound-effects/generate";
-import { buildActionSoundPrompt } from "../sound-effects/prompts";
 import {
-  generateSpeechWithTimestamps,
+  generateActionSoundEffect,
+  generateMoodMusic,
+} from "../sound-effects/generate";
+import { buildActionSoundPrompt } from "../sound-effects/prompts";
+import { generateSpeechWithTimestamps } from "../speech/elevenlabs-tts";
+import {
+  HistoryEntry,
+  MoodType,
   type Alignment,
-} from "../speech/elevenlabs-tts";
-import { HistoryEntry, MoodType } from "../state-management/states";
+} from "../state-management/states";
+import type { ActionResult } from "./dto";
 
 const DISABLE_NARRATOR = process.env.DISABLE_NARRATOR === "true";
 
@@ -36,16 +39,6 @@ const StorySchema = z.object({
     "The current emotional tone: calm (exploration/peaceful), tense (building suspense), danger (combat/threat), mystery (discovery/intrigue), triumph (victory/relief)"
   ),
 });
-
-export interface ActionResult {
-  narrativeText: string;
-  actions: string[];
-  audioBase64: string | null;
-  alignment: Alignment | null;
-  actionSoundUrl: string | null;
-  mood: MoodType;
-  moodMusicUrl: string | null;
-}
 
 /**
  * Handle action submission - generates story, action sound, and mood music in parallel
