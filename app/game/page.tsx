@@ -7,6 +7,7 @@ import { Scene } from "../_scene/scene";
 import { useGameStore, GamePhase } from "../lib/state-management/states";
 import { useCaptions } from "../lib/speech/captions";
 import { useTriggerUIStore } from "../_scene/store/trigger-ui";
+import { AutoscrollButton } from "../_scene/components/autoscroll-button";
 
 const FADE_DURATION_MS = 2000;
 const FADE_INTERVAL_MS = 50;
@@ -330,6 +331,9 @@ export default function Home() {
 
       {/* Subtitles overlay */}
       {phase === GamePhase.STORY && <Subtitles text={captionText} />}
+
+      {/* Autoscroll button */}
+      <AutoscrollButton />
 
       {/* Trigger UI overlay */}
       {triggerActive && !showSplash && (

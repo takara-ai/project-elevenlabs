@@ -2,17 +2,21 @@
 
 import { useThree, useFrame } from "@react-three/fiber";
 import { useControls } from "leva";
-import * as React from "react";
 import * as THREE from "three";
 import { useMotionValue, useSpring } from "motion/react";
 import { useCameraStore } from "../store/camera";
+import { useRef, useEffect } from "react";
 
 export function Camera() {
   const { camera, gl } = useThree();
-  const cameraRef = React.useRef(camera);
+  const cameraRef = useRef(camera);
   // Subscribe to active effects to trigger re-renders when they change
   const activeEffects = useCameraStore((state) => state.activeEffects);
   const defaultXPosition = useCameraStore((state) => state.defaultXPosition);
+  const isControlled = useCameraStore((state) => state.isControlled);
+  const setIsControlled = useCameraStore((state) => state.setIsControlled);
+  const autoscrollerZ = useCameraStore((state) => state.autoscrollerZ);
+  const setAutoscrollerZ = useCameraStore((state) => state.setAutoscrollerZ);
 
   const setDefaultXPosition = useCameraStore(
     (state) => state.setDefaultXPosition
@@ -63,8 +67,8 @@ export function Camera() {
   });
 
   // Initialize targetZ and targetX only once on mount
-  const hasInitialized = React.useRef(false);
-  React.useEffect(() => {
+  const hasInitialized = useRef(false);
+  useEffect(() => {
     if (!hasInitialized.current) {
       targetZ.set(controls.position[2]);
       targetX.set(defaultXPosition);
@@ -81,9 +85,14 @@ export function Camera() {
   ]);
 
   // Update zoom and position based on camera store effects
-  React.useEffect(() => {
+  useEffect(() => {
     const topEffect =
       activeEffects.length > 0 ? activeEffects[activeEffects.length - 1] : null;
+
+    // Get autoscroller effect (should be at index 0)
+    const autoscrollerEffect = activeEffects.find(
+      (e) => e.id === "autoscroller"
+    );
 
     // Update zoom
     const effectZoom = topEffect?.zoom;
@@ -100,22 +109,57 @@ export function Camera() {
       // Return to default X position from store (when all effects are removed)
       targetX.set(defaultXPosition);
     }
+
+    // Update Z position based on isControlled state
+    if (!isControlled && autoscrollerEffect?.targetPosition) {
+      // When not controlled, use autoscroller target Z
+      targetZ.set(autoscrollerEffect.targetPosition[2]);
+    } else if (isControlled) {
+      // When controlled, keep current Z (user controls it via scroll)
+      // Don't update targetZ here, let scroll handler control it
+      // Sync autoscroller Z to current camera Z so it can catch up when switching back
+      const currentZ = smoothZ.get();
+      if (currentZ > autoscrollerZ) {
+        setAutoscrollerZ(currentZ);
+      }
+    }
   }, [
     activeEffects,
     controls.zoom,
     controls.position,
     targetZoom,
     targetX,
+    targetZ,
     defaultXPosition,
+    isControlled,
+    smoothZ,
+    setAutoscrollerZ,
+    autoscrollerZ,
   ]);
 
   // Handle scroll wheel
-  React.useEffect(() => {
+  useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
+
+      if (e.deltaY > 0 && !isControlled) {
+        return;
+      }
+      // When user starts scrolling, set to controlled mode
+      if (!isControlled) {
+        setIsControlled(true);
+      }
+
       const delta = e.deltaY * controls.scrollSpeed * 0.01;
+
       const currentZ = targetZ.get();
-      targetZ.set(currentZ + delta);
+      const newZ = currentZ + delta;
+
+      targetZ.set(newZ);
+      // If scrolled below autoscroller Z, switch back to autoscroll
+      if (isControlled && newZ > autoscrollerZ) {
+        setIsControlled(false);
+      }
     };
 
     const canvas = gl.domElement;
@@ -124,7 +168,14 @@ export function Camera() {
     return () => {
       canvas.removeEventListener("wheel", handleWheel);
     };
-  }, [gl.domElement, targetZ, controls.scrollSpeed]);
+  }, [
+    gl.domElement,
+    targetZ,
+    controls.scrollSpeed,
+    isControlled,
+    setIsControlled,
+    autoscrollerZ,
+  ]);
 
   // Update camera position and zoom with smooth motion
   useFrame(() => {
@@ -134,11 +185,16 @@ export function Camera() {
       cam.position.z = smoothZ.get();
       cam.zoom = smoothZoom.get();
       cam.updateProjectionMatrix();
+
+      // Check if camera Z is below autoscroller Z when controlled
+      if (isControlled && smoothZ.get() > autoscrollerZ) {
+        setIsControlled(false);
+      }
     }
   });
 
   // Update camera properties when controls change
-  React.useEffect(() => {
+  useEffect(() => {
     if (cameraRef.current) {
       const cam = cameraRef.current as THREE.PerspectiveCamera;
 
@@ -166,7 +222,7 @@ export function Camera() {
   }, [controls, camera, smoothZ, smoothX]);
 
   // Keep camera ref in sync
-  React.useEffect(() => {
+  useEffect(() => {
     cameraRef.current = camera;
   }, [camera]);
 

@@ -16,7 +16,11 @@ type TriggerUIState = {
   /**
    * Set trigger UI state
    */
-  setTrigger: (isActive: boolean, label?: string | null, triggerId?: string | null) => void;
+  setTrigger: (
+    isActive: boolean,
+    label?: string | null,
+    triggerId?: string | null
+  ) => void;
   /**
    * Clear trigger UI state
    */
@@ -70,4 +74,3 @@ export const useTriggerUIStore = create<TriggerUIState>((set, get) => ({
       onTriggerCallback: callback,
     }),
 }));
-

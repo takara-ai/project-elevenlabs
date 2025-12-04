@@ -30,17 +30,40 @@ type CameraState = {
    */
   defaultXPosition: number;
   /**
+   * Whether the camera is controlled by user (false = autoscroll mode)
+   */
+  isControlled: boolean;
+  /**
+   * Current autoscroller Z position (tracks where autoscroll would be)
+   */
+  autoscrollerZ: number;
+  /**
    * Add a camera effect
    */
-  addEffect: (effect: CameraEffect) => void;
+  addEffect: (effect: CameraEffect, atIndex?: number) => void;
   /**
    * Remove a camera effect by id
    */
   removeEffect: (id: string) => void;
   /**
+   * Update an existing camera effect by id
+   */
+  updateEffect: (
+    id: string,
+    updates: Partial<Omit<CameraEffect, "id">>
+  ) => void;
+  /**
    * Set the default X position for when all effects are removed
    */
   setDefaultXPosition: (x: number) => void;
+  /**
+   * Set whether the camera is controlled by user
+   */
+  setIsControlled: (controlled: boolean) => void;
+  /**
+   * Update the autoscroller Z position
+   */
+  setAutoscrollerZ: (z: number) => void;
   /**
    * Get the current effective zoom (from the top effect)
    */
@@ -54,18 +77,40 @@ type CameraState = {
 export const useCameraStore = create<CameraState>((set, get) => ({
   activeEffects: [],
   defaultXPosition: 0,
+  isControlled: false,
+  autoscrollerZ: 0,
 
-  addEffect: (effect) =>
-    set((state) => ({
-      activeEffects: [...state.activeEffects, effect],
-    })),
+  addEffect: (effect, atIndex) => {
+    if (atIndex !== undefined) {
+      set((state) => {
+        const newEffects = [...state.activeEffects];
+        newEffects.splice(atIndex, 0, effect);
+        return { activeEffects: newEffects };
+      });
+    } else {
+      set((state) => ({
+        activeEffects: [...state.activeEffects, effect],
+      }));
+    }
+  },
 
   removeEffect: (id) =>
     set((state) => ({
       activeEffects: state.activeEffects.filter((e) => e.id !== id),
     })),
 
+  updateEffect: (id, updates) =>
+    set((state) => ({
+      activeEffects: state.activeEffects.map((e) =>
+        e.id === id ? { ...e, ...updates } : e
+      ),
+    })),
+
   setDefaultXPosition: (x) => set({ defaultXPosition: x }),
+
+  setIsControlled: (controlled) => set({ isControlled: controlled }),
+
+  setAutoscrollerZ: (z) => set({ autoscrollerZ: z }),
 
   getCurrentZoom: () => {
     const effects = get().activeEffects;
