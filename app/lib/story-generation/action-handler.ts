@@ -80,6 +80,8 @@ export async function handleAction(
       : generateObject({
           model: anthropic("claude-sonnet-4-5-20250929"),
           schema: StorySchema,
+          schemaName: "StoryResponse",
+          schemaDescription: "The story continuation with narrative, actions, and mood",
           messages,
         }).then((r) => ({ ...r, cached: false })),
     generateActionSoundEffect(actionSoundPrompt),
@@ -116,14 +118,14 @@ export async function handleAction(
   }
 
   // Generate narrator speech with timestamps AFTER we have the text (must be sequential)
-  let audioBase64: string | null = null;
+  let audioUrl: string | null = null;
   let alignment: Alignment | null = null;
   if (!DISABLE_NARRATOR) {
     try {
       const result = await generateSpeechWithTimestamps(
         object.narrativeText + " " + object.askAction
       );
-      audioBase64 = result.audioBase64;
+      audioUrl = result.audioUrl;
       alignment = result.alignment;
     } catch (err) {
       console.error("[Speech] Failed to generate audio:", err);
@@ -133,7 +135,7 @@ export async function handleAction(
   return {
     narrativeText: object.narrativeText,
     actions: object.actions,
-    audioBase64,
+    audioUrl,
     alignment,
     actionSoundUrl: actionSoundResult.blobUrl || null,
     mood: newMood,

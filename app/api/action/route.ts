@@ -15,7 +15,7 @@ export async function POST(request: Request) {
           id: Math.random().toString(36).substring(2, 15),
           narrativeText: h.text,
           actions: [], // Will be populated by the handler
-          audioBase64: null,
+          audioUrl: null,
           alignment: null,
           timestamp: Date.now(),
         };

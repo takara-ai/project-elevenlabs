@@ -264,13 +264,13 @@ export default function TestStatesPage() {
                   {currentStory.narrativeText}
                 </p>
               </div>
-              {currentStory.audioBase64 && (
+              {currentStory.audioUrl && (
                 <audio
                   ref={narratorAudioRef}
                   autoPlay
                   controls
                   className="w-full"
-                  src={`data:audio/mpeg;base64,${currentStory.audioBase64}`}
+                  src={currentStory.audioUrl}
                 />
               )}
               <button

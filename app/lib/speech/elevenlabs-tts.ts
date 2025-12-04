@@ -1,3 +1,4 @@
+import { put } from '@vercel/blob'
 import { getCached, setCache } from '../cache/blob-cache'
 import { createCacheKey } from '../cache/hash'
 
@@ -9,15 +10,21 @@ export interface Alignment {
   character_end_times_seconds: number[]
 }
 
+// Cached data stored in metadata (URL + alignment only)
+interface TTSCacheData {
+  audioUrl: string
+  alignment: Alignment
+}
+
 export interface TTSWithTimestampsResult {
-  audioBase64: string
+  audioUrl: string
   alignment: Alignment
   cached?: boolean
 }
 
 /**
  * Generate speech with character-level timestamps from ElevenLabs
- * Checks blob cache first to avoid regenerating identical speech
+ * Stores audio as blob, returns CDN URL for fast loading
  */
 export async function generateSpeechWithTimestamps(
   text: string,
@@ -25,7 +32,7 @@ export async function generateSpeechWithTimestamps(
 ): Promise<TTSWithTimestampsResult> {
   // Check cache first
   const cacheKey = createCacheKey({ text, voiceId })
-  const cached = await getCached<TTSWithTimestampsResult>('tts', cacheKey)
+  const cached = await getCached<TTSCacheData>('tts', cacheKey)
   if (cached) {
     console.log('[TTS] Cache hit for:', text.slice(0, 50) + '...')
     return { ...cached, cached: true }
@@ -61,15 +68,22 @@ export async function generateSpeechWithTimestamps(
 
   const data = await response.json()
   
-  const result: TTSWithTimestampsResult = {
-    audioBase64: data.audio_base64,
+  // Convert base64 to buffer and upload to blob storage
+  const audioBuffer = Buffer.from(data.audio_base64, 'base64')
+  const filename = `tts-${cacheKey}-${Date.now()}.mp3`
+  const blob = await put(filename, audioBuffer, {
+    access: 'public',
+    contentType: 'audio/mpeg',
+  })
+
+  // Store URL + alignment in cache metadata
+  const cacheData: TTSCacheData = {
+    audioUrl: blob.url,
     alignment: data.alignment,
   }
-
-  // Store in cache
-  await setCache('tts', cacheKey, result)
+  await setCache('tts', cacheKey, cacheData)
   console.log('[TTS] Cached new response for:', text.slice(0, 50) + '...')
 
-  return { ...result, cached: false }
+  return { ...cacheData, cached: false }
 }
 

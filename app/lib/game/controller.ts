@@ -149,7 +149,7 @@ export const game = {
       const {
         narrativeText,
         actions,
-        audioBase64,
+        audioUrl,
         alignment,
         actionSoundUrl,
         mood,
@@ -159,7 +159,7 @@ export const game = {
       log("generated", {
         narrativeText: narrativeText.slice(0, 50) + "...",
         actions,
-        hasAudio: !!audioBase64,
+        hasAudio: !!audioUrl,
         hasAlignment: !!alignment,
         hasActionSound: !!actionSoundUrl,
         mood,
@@ -179,7 +179,7 @@ export const game = {
 
       useGameStore
         .getState()
-        ._setStory(narrativeText, actions, audioBase64, alignment, true);
+        ._setStory(narrativeText, actions, audioUrl, alignment, true);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Generation failed";
       log("error", message);
