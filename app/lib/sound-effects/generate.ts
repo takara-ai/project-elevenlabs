@@ -2,6 +2,8 @@
 
 import { put } from '@vercel/blob'
 import { addSoundEffectEntry, findSoundEffectByPrompt, type SoundEffectType } from './metadata'
+import { buildMoodMusicPrompt } from './prompts'
+import type { MoodType } from '../state-management/states'
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY
 const DISABLE_SOUND_EFFECTS = process.env.DISABLE_SOUND_EFFECTS === 'true'
@@ -82,6 +84,48 @@ export async function generateActionSoundEffect(prompt: string): Promise<SoundEf
 
   // Record in metadata
   await addSoundEffectEntry('action', prompt, blob.url)
+
+  return {
+    blobUrl: blob.url,
+    prompt,
+    cached: false,
+  }
+}
+
+/**
+ * Generate mood-based looping music for progressive game audio
+ * Creates music that matches the current narrative mood (calm, tense, danger, etc.)
+ * Caches by mood+setting combination for efficient reuse
+ */
+export async function generateMoodMusic(setting: string, mood: MoodType): Promise<SoundEffectResult> {
+  const prompt = buildMoodMusicPrompt(setting, mood)
+  
+  if (DISABLE_SOUND_EFFECTS) {
+    return { blobUrl: '', prompt, cached: false }
+  }
+
+  // Check cache first (mood music uses 'mood' type for separate caching)
+  const cached = await findSoundEffectByPrompt('mood', prompt)
+  if (cached) {
+    return {
+      blobUrl: cached.blobUrl,
+      prompt: cached.prompt,
+      cached: true,
+    }
+  }
+
+  // Generate mood music from ElevenLabs (longer duration, loopable)
+  const audioBuffer = await callElevenLabsSoundGeneration(prompt, { loop: true, duration: 12 })
+  
+  // Upload to Vercel Blob
+  const filename = `mood-${mood}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.mp3`
+  const blob = await put(filename, audioBuffer, {
+    access: 'public',
+    contentType: 'audio/mpeg',
+  })
+
+  // Record in metadata
+  await addSoundEffectEntry('mood', prompt, blob.url)
 
   return {
     blobUrl: blob.url,

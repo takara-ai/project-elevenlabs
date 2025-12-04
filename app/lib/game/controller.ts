@@ -15,6 +15,7 @@ import {
   useGameStore,
   type StoryEntry,
   type ActionEntry,
+  type MoodType,
 } from "../state-management/states";
 import { handleAction } from "../story-generation/action-handler";
 import { generateSoundEffect } from "../sound-effects/generate";
@@ -102,7 +103,10 @@ export const game = {
     log("act", { text, choiceIndex });
 
     const store = useGameStore.getState();
-    const { history } = store;
+    const { history, currentMood } = store;
+
+    // Get setting from history for mood music generation
+    const setting = getSettingFromHistory();
 
     // Regular action flow - get setting from history
     store._addAction(text, choiceIndex, false);
@@ -113,9 +117,9 @@ export const game = {
     try {
       store._setLoading(60);
 
-      // Single server action that runs Anthropic + sound effect in parallel
-      const { narrativeText, actions, audioBase64, alignment, actionSoundUrl } =
-        await handleAction(text, history);
+      // Single server action that runs Anthropic + sound effect + mood music in parallel
+      const { narrativeText, actions, audioBase64, alignment, actionSoundUrl, mood, moodMusicUrl } =
+        await handleAction(text, history, currentMood, setting);
 
       log("generated", {
         narrativeText: narrativeText.slice(0, 50) + "...",
@@ -123,10 +127,21 @@ export const game = {
         hasAudio: !!audioBase64,
         hasAlignment: !!alignment,
         hasActionSound: !!actionSoundUrl,
+        mood,
+        hasMoodMusic: !!moodMusicUrl,
       });
 
       // Set everything and transition to STORY
       useGameStore.getState()._setActionSound(actionSoundUrl, false);
+      
+      // Update mood music if it changed
+      if (moodMusicUrl) {
+        useGameStore.getState()._setMoodMusic(moodMusicUrl, mood, false);
+      } else if (mood !== currentMood) {
+        // Mood changed but no new music URL - just update the mood
+        useGameStore.getState()._setMoodMusic(null, mood, false);
+      }
+      
       useGameStore
         .getState()
         ._setStory(narrativeText, actions, audioBase64, alignment, true);

@@ -11,6 +11,17 @@ export const GamePhase = {
 
 export type GamePhaseType = (typeof GamePhase)[keyof typeof GamePhase];
 
+// Mood types for progressive music
+export const Mood = {
+  CALM: "calm",
+  TENSE: "tense",
+  DANGER: "danger",
+  MYSTERY: "mystery",
+  TRIUMPH: "triumph",
+} as const;
+
+export type MoodType = (typeof Mood)[keyof typeof Mood];
+
 export interface Alignment {
   characters: string[];
   character_start_times_seconds: number[];
@@ -54,6 +65,11 @@ export interface GameState {
   soundstageUrl: string | null;
   soundstageLoading: boolean;
 
+  // Progressive mood music (changes based on story mood)
+  currentMood: MoodType | null;
+  moodMusicUrl: string | null;
+  moodMusicLoading: boolean;
+
   // Action sound effect (one-shot sound played after action completes)
   actionSoundUrl: string | null;
   actionSoundLoading: boolean;
@@ -86,6 +102,7 @@ export interface GameActions {
   _setConfig: () => void;
   _setError: (error: string | null) => void;
   _setSoundstage: (url: string | null, loading?: boolean) => void;
+  _setMoodMusic: (url: string | null, mood: MoodType | null, loading?: boolean) => void;
   _setActionSound: (url: string | null, loading?: boolean) => void;
   _reset: () => void;
 }
@@ -104,6 +121,9 @@ const initialState: GameState = {
   error: null,
   soundstageUrl: null,
   soundstageLoading: false,
+  currentMood: null,
+  moodMusicUrl: null,
+  moodMusicLoading: false,
   actionSoundUrl: null,
   actionSoundLoading: false,
   isGenerating: false,
@@ -210,6 +230,17 @@ export const useGameStore = create<GameState & GameActions>()(
           },
           false,
           "_setSoundstage"
+        ),
+
+      _setMoodMusic: (url, mood, loading = false) =>
+        set(
+          {
+            moodMusicUrl: url,
+            currentMood: mood,
+            moodMusicLoading: loading,
+          },
+          false,
+          "_setMoodMusic"
         ),
 
       _setActionSound: (url, loading = false) =>

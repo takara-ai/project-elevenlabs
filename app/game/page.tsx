@@ -14,11 +14,16 @@ import { game } from "../lib/game/controller";
 
 const FADE_DURATION_MS = 2000;
 const FADE_INTERVAL_MS = 50;
+const MOOD_MUSIC_VOLUME = 0.20;
+const CROSSFADE_DURATION_MS = 3000;
+const NARRATOR_DELAY_MS = 4000;
 
 export default function Home() {
   const phase = useGameStore((s) => s.phase);
   const soundstageUrl = useGameStore((s) => s.soundstageUrl);
   const actionSoundUrl = useGameStore((s) => s.actionSoundUrl);
+  const moodMusicUrl = useGameStore((s) => s.moodMusicUrl);
+  const currentMood = useGameStore((s) => s.currentMood);
   const currentStory = useGameStore((s) => s.currentStory);
 
   const {
@@ -40,6 +45,14 @@ export default function Home() {
   const lastPlayedActionSoundRef = useRef<string | null>(null);
   const narratorAudioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Mood music refs - two audio elements for crossfading
+  const moodMusicRef = useRef<HTMLAudioElement | null>(null);
+  const moodMusicNextRef = useRef<HTMLAudioElement | null>(null);
+  const lastMoodMusicUrlRef = useRef<string | null>(null);
+
+  // Track last narrated story to avoid replaying
+  const lastNarratedStoryIdRef = useRef<string | null>(null);
+  const narratorDelayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Reset game state on page load
   useEffect(() => {
     game.reset();
@@ -50,6 +63,34 @@ export default function Home() {
     currentStory?.alignment ?? null,
     narratorAudioRef
   );
+
+  // Play narrator audio after delay (to let action sound effect play first)
+  useEffect(() => {
+    if (!currentStory?.audioBase64 || !currentStory?.id) return;
+
+    // Skip if already narrated this story
+    if (currentStory.id === lastNarratedStoryIdRef.current) return;
+
+    lastNarratedStoryIdRef.current = currentStory.id;
+
+    // Clear any pending timeout
+    if (narratorDelayTimeoutRef.current) {
+      clearTimeout(narratorDelayTimeoutRef.current);
+    }
+
+    // Delay narrator to let action sound effect play first
+    narratorDelayTimeoutRef.current = setTimeout(() => {
+      if (narratorAudioRef.current) {
+        narratorAudioRef.current.play().catch(console.error);
+      }
+    }, NARRATOR_DELAY_MS);
+
+    return () => {
+      if (narratorDelayTimeoutRef.current) {
+        clearTimeout(narratorDelayTimeoutRef.current);
+      }
+    };
+  }, [currentStory?.audioBase64, currentStory?.id]);
 
   // Fade out background music smoothly
   const fadeOutBackgroundMusic = useCallback(() => {
@@ -139,15 +180,93 @@ export default function Home() {
     }
   }, [actionSoundUrl]);
 
+  // Progressive mood music with crossfade
+  useEffect(() => {
+    // Don't play mood music until game has started
+    if (phase !== GamePhase.STORY || !moodMusicUrl) return;
+
+    // Skip if same URL already playing
+    if (moodMusicUrl === lastMoodMusicUrlRef.current) return;
+
+    lastMoodMusicUrlRef.current = moodMusicUrl;
+
+    // Create new audio for the incoming track
+    const newAudio = new Audio(moodMusicUrl);
+    newAudio.loop = true;
+    newAudio.volume = 0;
+
+    const oldAudio = moodMusicRef.current;
+    moodMusicNextRef.current = newAudio;
+
+    // Start playing new track
+    newAudio.play().then(() => {
+      const steps = CROSSFADE_DURATION_MS / FADE_INTERVAL_MS;
+      const volumeStep = MOOD_MUSIC_VOLUME / steps;
+      let currentStep = 0;
+
+      const crossfadeInterval = setInterval(() => {
+        currentStep++;
+
+        // Fade in new track
+        newAudio.volume = Math.min(MOOD_MUSIC_VOLUME, newAudio.volume + volumeStep);
+
+        // Fade out old track if exists
+        if (oldAudio) {
+          oldAudio.volume = Math.max(0, oldAudio.volume - volumeStep);
+        }
+
+        if (currentStep >= steps) {
+          clearInterval(crossfadeInterval);
+
+          // Clean up old audio
+          if (oldAudio) {
+            oldAudio.pause();
+            oldAudio.src = "";
+          }
+
+          // Swap refs
+          moodMusicRef.current = newAudio;
+          moodMusicNextRef.current = null;
+        }
+      }, FADE_INTERVAL_MS);
+    }).catch(console.error);
+  }, [phase, moodMusicUrl]);
+
+  // Stop mood music when returning to IDLE
+  useEffect(() => {
+    if (phase === GamePhase.IDLE) {
+      if (moodMusicRef.current) {
+        moodMusicRef.current.pause();
+        moodMusicRef.current = null;
+      }
+      if (moodMusicNextRef.current) {
+        moodMusicNextRef.current.pause();
+        moodMusicNextRef.current = null;
+      }
+      lastMoodMusicUrlRef.current = null;
+    }
+  }, [phase]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (fadeIntervalRef.current) {
         clearInterval(fadeIntervalRef.current);
       }
+      if (narratorDelayTimeoutRef.current) {
+        clearTimeout(narratorDelayTimeoutRef.current);
+      }
       if (soundstageRef.current) {
         soundstageRef.current.pause();
         soundstageRef.current = null;
+      }
+      if (moodMusicRef.current) {
+        moodMusicRef.current.pause();
+        moodMusicRef.current = null;
+      }
+      if (moodMusicNextRef.current) {
+        moodMusicNextRef.current.pause();
+        moodMusicNextRef.current = null;
       }
     };
   }, []);
@@ -159,7 +278,7 @@ export default function Home() {
       audioRef.current
         .play()
         .then(() => setAudioPlaying(true))
-        .catch(() => {});
+        .catch(() => { });
     }
 
     setSplashFading(true);
@@ -180,27 +299,24 @@ export default function Home() {
 
   return (
     <div
-      className={`relative flex h-full w-full items-center justify-center overflow-hidden ${
-        triggerActive && !showSplash ? "cursor-pointer" : ""
-      }`}
+      className={`relative flex h-full w-full items-center justify-center overflow-hidden ${triggerActive && !showSplash ? "cursor-pointer" : ""
+        }`}
       onClick={handleTriggerClick}
     >
       <audio ref={audioRef} src="/audio/background.mp3" loop />
 
-      {/* Narrator voice audio - hidden, auto-plays when story loads */}
+      {/* Narrator voice audio - hidden, plays after delay to let action sound finish */}
       {currentStory?.audioBase64 && (
         <audio
           ref={narratorAudioRef}
-          autoPlay
           src={`data:audio/mpeg;base64,${currentStory.audioBase64}`}
           className="hidden"
         />
       )}
 
       <div
-        className={`h-full w-full transition-opacity duration-700 ease-out ${
-          canvasVisible ? "opacity-100" : "opacity-0"
-        }`}
+        className={`h-full w-full transition-opacity duration-700 ease-out ${canvasVisible ? "opacity-100" : "opacity-0"
+          }`}
       >
         <Canvas className="h-full w-full">
           <color attach="background" args={["#000000"]} />

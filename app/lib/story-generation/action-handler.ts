@@ -4,15 +4,18 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { buildNarratorMessages } from "./prompts";
-import { generateActionSoundEffect } from "../sound-effects/generate";
+import { generateActionSoundEffect, generateMoodMusic } from "../sound-effects/generate";
 import { buildActionSoundPrompt } from "../sound-effects/prompts";
 import {
   generateSpeechWithTimestamps,
   type Alignment,
 } from "../speech/elevenlabs-tts";
-import { HistoryEntry } from "../state-management/states";
+import { HistoryEntry, MoodType } from "../state-management/states";
 
 const DISABLE_NARRATOR = process.env.DISABLE_NARRATOR === "true";
+
+// Mood types that drive progressive music changes
+const MoodEnum = z.enum(["calm", "tense", "danger", "mystery", "triumph"]);
 
 const StorySchema = z.object({
   narrativeText: z
@@ -29,6 +32,9 @@ const StorySchema = z.object({
     .describe(
       "A sentence to ask the user to choose an action, e.g. 'What direction do you choose?'"
     ),
+  mood: MoodEnum.describe(
+    "The current emotional tone: calm (exploration/peaceful), tense (building suspense), danger (combat/threat), mystery (discovery/intrigue), triumph (victory/relief)"
+  ),
 });
 
 export interface ActionResult {
@@ -37,15 +43,20 @@ export interface ActionResult {
   audioBase64: string | null;
   alignment: Alignment | null;
   actionSoundUrl: string | null;
+  mood: MoodType;
+  moodMusicUrl: string | null;
 }
 
 /**
- * Handle action submission - generates story and action sound effect in parallel
+ * Handle action submission - generates story, action sound, and mood music in parallel
  * Narrator speech runs after story text is generated (needs the text)
+ * Mood music only regenerates when the mood changes from the previous state
  */
 export async function handleAction(
   actionText: string,
-  history: HistoryEntry[]
+  history: HistoryEntry[],
+  currentMood: MoodType | null = null,
+  currentSetting: string | null = null
 ): Promise<ActionResult> {
   // Build action sound prompt
   const actionSoundPrompt = buildActionSoundPrompt(actionText);
@@ -61,6 +72,18 @@ export async function handleAction(
   ]);
 
   const { object } = storyResult;
+  const newMood = object.mood as MoodType;
+
+  // Generate mood music if mood changed (or first story)
+  let moodMusicUrl: string | null = null;
+  if (newMood !== currentMood && currentSetting) {
+    try {
+      const moodResult = await generateMoodMusic(currentSetting, newMood);
+      moodMusicUrl = moodResult.blobUrl || null;
+    } catch (err) {
+      console.error("[MoodMusic] Failed to generate:", err);
+    }
+  }
 
   // Generate narrator speech with timestamps AFTER we have the text (must be sequential)
   let audioBase64: string | null = null;
@@ -83,5 +106,7 @@ export async function handleAction(
     audioBase64,
     alignment,
     actionSoundUrl: actionSoundResult.blobUrl || null,
+    mood: newMood,
+    moodMusicUrl,
   };
 }
