@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useCameraStore } from "../store/camera";
 import { CurverLine, StraitLine } from "./line";
 import { TriggerCollider } from "./trigger-collider";
+import { useControls } from "leva";
 
 const LINE_HEIGHT = 0.05;
 export const PHASE_HEIGHT = 12;
@@ -44,6 +45,16 @@ export function Phase({
   const setDefaultXPosition = useCameraStore(
     (state) => state.setDefaultXPosition
   );
+
+  // Leva controls for point light (must be called before any conditional returns)
+  const pointLightControls = useControls("Point Light", {
+    intensity: { value: 3, min: 0, max: 100, step: 1 },
+    distance: { value: 10, min: 0, max: 200, step: 1 },
+    decay: { value: 0.8, min: 0, max: 10, step: 0.1 },
+    color: "#56a09b",
+    castShadow: false,
+  });
+
   // Generate unique IDs for this phase's triggers
   const phaseId =
     phase.id + "-" + offset[0] + "-" + offset[1] + "-" + offset[2];
@@ -102,8 +113,19 @@ export function Phase({
     // Trigger box size for option selection
     const OPTION_TRIGGER_SIZE: [number, number, number] = [3, 3, 3];
 
+    const lightPosition = add(offset, [0, 8, (3 * PHASE_HEIGHT) / 4]);
+
     return (
       <>
+        <pointLight
+          position={lightPosition}
+          intensity={pointLightControls.intensity}
+          distance={pointLightControls.distance}
+          decay={pointLightControls.decay}
+          color={pointLightControls.color}
+          castShadow={pointLightControls.castShadow}
+        />
+
         {/* Main story phase trigger - zooms camera when player enters */}
         <TriggerCollider
           position={add(offset, [0, LINE_HEIGHT, (3 * PHASE_HEIGHT) / 4])}
@@ -138,7 +160,6 @@ export function Phase({
               targetPosition: leftOptionPos,
               smooth: true,
             });
-            setDefaultXPosition(leftOptionPos[0]);
             // Only update hover state if decision hasn't been taken
             if (selectedChoice === null) {
               setHoveredOption("left");
@@ -159,7 +180,11 @@ export function Phase({
               game.act({ text: phase.actions[0], choiceIndex: 0 });
             }
           }}
-          showProgress={selectedChoice === null}
+          label={
+            selectedChoice === null && isCurrentPhase
+              ? "Click to choose this action"
+              : undefined
+          }
         />
 
         {/* Center option trigger */}
@@ -195,7 +220,11 @@ export function Phase({
               game.act({ text: phase.actions[1], choiceIndex: 1 });
             }
           }}
-          showProgress={selectedChoice === null}
+          label={
+            selectedChoice === null && isCurrentPhase
+              ? "Click to choose this action"
+              : undefined
+          }
         />
 
         {/* Right option trigger */}
@@ -234,7 +263,11 @@ export function Phase({
             }
             removeEffect(rightTriggerId);
           }}
-          showProgress={selectedChoice === null}
+          label={
+            selectedChoice === null && isCurrentPhase
+              ? "Click to choose this action"
+              : undefined
+          }
         />
 
         <StraitLine

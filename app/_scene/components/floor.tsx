@@ -10,9 +10,10 @@ export function Floor() {
   const { camera } = useThree();
   const meshRef = React.useRef<Mesh>(null);
 
-  const { floorY, floorSize } = useControls("Floor", {
+  const { floorY, floorSize, floorColor } = useControls("Floor", {
     floorY: { value: -0.01, min: -1, max: 1, step: 0.01 },
     floorSize: { value: 50, min: 1, max: 200, step: 1 },
+    floorColor: { value: "#000" },
   });
 
   useFrame(() => {
@@ -31,7 +32,11 @@ export function Floor() {
   return (
     <mesh ref={meshRef} receiveShadow>
       <planeGeometry args={[floorSize, floorSize]} />
-      <meshStandardMaterial color="#ffffff" roughness={0.8} metalness={0.1} />
+      <meshStandardMaterial
+        color={floorColor}
+        roughness={0.8}
+        metalness={0.1}
+      />
     </mesh>
   );
 }

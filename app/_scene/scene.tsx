@@ -15,17 +15,7 @@ import { History } from "./components/history";
 export function Scene() {
   // Leva controls for scene parameters
   const lighting = useControls("Lighting", {
-    ambientIntensity: { value: 0, min: 0, max: 5, step: 0.1 },
-    pointLightIntensity: { value: 5, min: 0, max: 20, step: 0.5 },
-    pointLightX: { value: 0, min: -50, max: 50, step: 1 },
-    pointLightY: { value: 5, min: -50, max: 50, step: 1 },
-    pointLightZ: { value: 10, min: -50, max: 50, step: 1 },
-    pointLightColor: {
-      value: "#ead03e",
-      min: "#000000",
-      max: "#ffffff",
-      step: 0.01,
-    },
+    ambientIntensity: { value: 1.5, min: 0, max: 5, step: 0.1 },
   });
 
   const bloom = useControls("Bloom", {
@@ -54,15 +44,6 @@ export function Scene() {
       <Title3D />
       <Floor />
       <CursorPosition />
-      <pointLight
-        position={[
-          lighting.pointLightX,
-          lighting.pointLightY,
-          lighting.pointLightZ,
-        ]}
-        color={lighting.pointLightColor}
-        intensity={lighting.pointLightIntensity}
-      />
       <RandomSpheres count={scene.randomSpheresCount} />
       <History />
       <Character

@@ -6,6 +6,7 @@ import { Prompt, SplashContainer, Title } from "../../components/splash";
 import { Scene } from "../_scene/scene";
 import { useGameStore, GamePhase } from "../lib/state-management/states";
 import { useCaptions } from "../lib/speech/captions";
+import { useTriggerUIStore } from "../_scene/store/trigger-ui";
 
 const FADE_DURATION_MS = 2000;
 const FADE_INTERVAL_MS = 50;
@@ -13,23 +14,22 @@ const SUBTITLE_MAX_CHARS = 120;
 
 function Subtitles({ text }: { text: string }) {
   // Show only the trailing portion of text with fade effect
-  const displayText = text.length > SUBTITLE_MAX_CHARS 
-    ? text.slice(-SUBTITLE_MAX_CHARS) 
-    : text;
-  
+  const displayText =
+    text.length > SUBTITLE_MAX_CHARS ? text.slice(-SUBTITLE_MAX_CHARS) : text;
+
   if (!displayText) return null;
-  
+
   return (
     <div className="absolute bottom-24 left-0 right-0 flex justify-center pointer-events-none z-40">
       <div className="relative max-w-2xl px-8">
         {/* Gradient fade on left edge for long text */}
         {text.length > SUBTITLE_MAX_CHARS && (
-          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-black to-transparent z-10" />
+          <div className="absolute left-0 top-0 bottom-0 w-16 bg-linear-to-r from-black to-transparent z-10" />
         )}
-        <p 
+        <p
           className="text-white/90 text-lg font-light tracking-wide text-center leading-relaxed"
           style={{
-            textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 0 30px rgba(0,0,0,0.5)',
+            textShadow: "0 2px 8px rgba(0,0,0,0.8), 0 0 30px rgba(0,0,0,0.5)",
           }}
         >
           {displayText}
@@ -40,11 +40,16 @@ function Subtitles({ text }: { text: string }) {
 }
 
 export default function Home() {
-  const state = useGameStore();
   const phase = useGameStore((s) => s.phase);
   const soundstageUrl = useGameStore((s) => s.soundstageUrl);
   const actionSoundUrl = useGameStore((s) => s.actionSoundUrl);
   const currentStory = useGameStore((s) => s.currentStory);
+
+  const {
+    isActive: triggerActive,
+    label: triggerLabel,
+    trigger: triggerAction,
+  } = useTriggerUIStore();
 
   const [showSplash, setShowSplash] = useState(true);
   const [splashFading, setSplashFading] = useState(false);
@@ -113,7 +118,8 @@ export default function Home() {
       soundstageRef.current = audio;
 
       // Fade in soundstage
-      audio.play()
+      audio
+        .play()
         .then(() => {
           setSoundstagePlaying(true);
           // Fade in over 2 seconds
@@ -134,7 +140,13 @@ export default function Home() {
       soundstageRef.current = null;
       setSoundstagePlaying(false);
     }
-  }, [phase, soundstageUrl, soundstagePlaying, bgMusicFadingOut, fadeOutBackgroundMusic]);
+  }, [
+    phase,
+    soundstageUrl,
+    soundstagePlaying,
+    bgMusicFadingOut,
+    fadeOutBackgroundMusic,
+  ]);
 
   // Play action sound effect when a new actionSoundUrl is set
   useEffect(() => {
@@ -166,7 +178,7 @@ export default function Home() {
       audioRef.current
         .play()
         .then(() => setAudioPlaying(true))
-        .catch(() => { });
+        .catch(() => {});
     }
 
     setSplashFading(true);
@@ -176,8 +188,22 @@ export default function Home() {
     }, 700);
   };
 
+  // Handle click to trigger action
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    // Only trigger if trigger UI is active and not clicking on splash
+    if (triggerActive && !showSplash) {
+      e.stopPropagation();
+      triggerAction();
+    }
+  };
+
   return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
+    <div
+      className={`relative flex h-full w-full items-center justify-center overflow-hidden ${
+        triggerActive && !showSplash ? "cursor-pointer" : ""
+      }`}
+      onClick={handleTriggerClick}
+    >
       <audio ref={audioRef} src="/audio/background.mp3" loop />
 
       {/* Narrator voice audio - hidden, auto-plays when story loads */}
@@ -191,8 +217,9 @@ export default function Home() {
       )}
 
       <div
-        className={`h-full w-full transition-opacity duration-700 ease-out ${canvasVisible ? "opacity-100" : "opacity-0"
-          }`}
+        className={`h-full w-full transition-opacity duration-700 ease-out ${
+          canvasVisible ? "opacity-100" : "opacity-0"
+        }`}
       >
         <Canvas className="h-full w-full">
           <color attach="background" args={["#000000"]} />
@@ -202,6 +229,15 @@ export default function Home() {
 
       {/* Subtitles overlay */}
       {phase === GamePhase.STORY && <Subtitles text={captionText} />}
+
+      {/* Trigger UI overlay */}
+      {triggerActive && !showSplash && (
+        <div className="absolute top-12 left-0 right-0 flex justify-center pointer-events-none z-50">
+          <p className="text-white bg-black/50 p-4 text-5xl font-semibold text-center">
+            {triggerLabel || "Click to interact"}
+          </p>
+        </div>
+      )}
 
       {showSplash && (
         <SplashContainer onClick={handleDismissSplash} fading={splashFading}>

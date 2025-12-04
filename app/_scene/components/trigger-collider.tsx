@@ -4,7 +4,8 @@ import { useFrame } from "@react-three/fiber";
 import { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
 import { useCursorStore } from "../store/cursor";
-import { Line, Html } from "@react-three/drei";
+import { useTriggerUIStore } from "../store/trigger-ui";
+import { Line } from "@react-three/drei";
 
 export interface TriggerColliderProps {
   /**
@@ -28,13 +29,9 @@ export interface TriggerColliderProps {
    */
   onInside?: () => void;
   /**
-   * Callback triggered after staying inside for triggerDuration seconds
+   * Callback triggered when player clicks while inside the trigger
    */
   onTrigger?: () => void;
-  /**
-   * Duration in seconds to stay inside before triggering onTrigger
-   */
-  triggerDuration?: number;
   /**
    * Optional identifier for this trigger
    */
@@ -44,9 +41,9 @@ export interface TriggerColliderProps {
    */
   debug?: boolean;
   /**
-   * Whether to show progress bar when trigger is active
+   * Optional label to show in the trigger UI
    */
-  showProgress?: boolean;
+  label?: string;
 }
 
 /**
@@ -60,15 +57,14 @@ export function TriggerCollider({
   onExit,
   onInside,
   onTrigger,
-  triggerDuration = 2,
   debug = true,
-  showProgress = false,
+  label,
+  id,
 }: TriggerColliderProps) {
   const boxRef = useRef<THREE.Box3 | null>(null);
-  const timeInsideRef = useRef(0);
-  const hasTriggeredRef = useRef(false);
   const [isInside, setIsInside] = useState(false);
-  const [hasTriggered, setHasTriggered] = useState(false);
+  const { setTrigger, clearTrigger, setOnTriggerCallback } =
+    useTriggerUIStore();
 
   // Initialize bounding box
   useEffect(() => {
@@ -96,29 +92,20 @@ export function TriggerCollider({
     if (isCurrentlyInside && !isInside) {
       // Just entered
       setIsInside(true);
-      timeInsideRef.current = 0;
-      hasTriggeredRef.current = false;
-      setHasTriggered(false);
+      // Set trigger UI state if onTrigger callback exists
+      if (onTrigger && label) {
+        setOnTriggerCallback(onTrigger);
+        setTrigger(true, label, id);
+      }
       onEnter?.();
     } else if (!isCurrentlyInside && isInside) {
       // Just exited
       setIsInside(false);
-      timeInsideRef.current = 0;
-
-      hasTriggeredRef.current = false;
-      setHasTriggered(false);
-
-      onExit?.();
-    }
-
-    // Update timer and trigger if duration reached
-    if (isCurrentlyInside && onTrigger && !hasTriggeredRef.current) {
-      timeInsideRef.current += delta;
-      if (timeInsideRef.current >= triggerDuration) {
-        hasTriggeredRef.current = true;
-        setHasTriggered(true);
-        onTrigger();
+      // Clear trigger UI state
+      if (onTrigger) {
+        clearTrigger();
       }
+      onExit?.();
     }
 
     // Call onInside if player is inside
@@ -178,26 +165,6 @@ export function TriggerCollider({
           lineWidth={LINE_WIDTH}
         />
       ))}
-      {showProgress && onTrigger && isInside && !hasTriggered && (
-        <Html
-          position={[cx, cy + height / 2 + 0.5, cz]}
-          className="w-20 z-1000"
-          transform={false}
-          center
-        >
-          <div className="w-full relative bg-zinc-700 rounded-sm h-4 overflow-hidden">
-            <div
-              className="absolute top-0 left-0 bg-green-500 h-full"
-              style={{
-                width: "100%",
-                animation: `fill-progress-bar ${
-                  triggerDuration || 1
-                }s linear forwards`,
-              }}
-            />
-          </div>
-        </Html>
-      )}
     </>
   );
 }
