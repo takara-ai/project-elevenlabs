@@ -37,7 +37,7 @@ export async function generateStoryScenario(
 ): Promise<GeneratedStory> {
   // Generate story text
   const { object } = await generateObject({
-    model: anthropic("claude-3-5-haiku-latest"),
+    model: anthropic("claude-4-5-haiku-latest"),
     schema: StorySchema,
     messages: buildNarratorMessages(setting, history, cycleIndex === 0),
   });
