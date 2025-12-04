@@ -18,15 +18,13 @@ export default function Home() {
           >
             Project Elevenlabs
           </h1>
-          <p className="text-neutral-500 text-sm tracking-widest">
-            West Europe Team Members
-          </p>
-          <p className="text-neutral-400 text-base">
+          <p className="text-muted-foreground text-2xl mt-4">
+            by{" "}
             <Link
               href="https://www.linkedin.com/in/codyadam/"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="text-white transition-colors px-1"
             >
               Cody Adams
             </Link>
@@ -35,15 +33,15 @@ export default function Home() {
               href="https://www.linkedin.com/in/404missinglink/"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="text-white transition-colors px-1"
             >
               Jordan Legg
             </Link>
           </p>
         </div>
 
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex items-center justify-center gap-10">
+        {/* <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center justify-center opacity-40 gap-10">
             <Image
               src="/sponsors/elevenlabs.svg"
               alt="ElevenLabs"
@@ -58,15 +56,16 @@ export default function Home() {
               height={28}
               className="opacity-60 hover:opacity-100 transition-opacity"
             />
-            <div
-              className="w-[80px] h-[28px] border border-dashed border-neutral-700 rounded flex items-center justify-center"
-              title="Your logo here"
-            >
-              <span className="text-neutral-700 text-[10px] tracking-wider">TBD</span>
-            </div>
+            <Image
+              src="/sponsors/project-europe.jpg"
+              alt="Project Europe"
+              width={140}
+              height={140}
+              className="opacity-60 -m-6 hover:opacity-100 transition-opacity"
+              title="Project Europe"
+            />
           </div>
-        </div>
-
+        </div> */}
         <Prompt>Click anywhere to enter</Prompt>
       </div>
     </SplashContainer>
