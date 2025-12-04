@@ -67,10 +67,16 @@ export async function handleAction(
 
   // Create cache key from the full message context
   const messages = buildNarratorMessages(history);
-  const llmCacheKey = createCacheKey(messages);
+  const llmCacheKey = createCacheKey({
+    messages,
+    history,
+    currentMood,
+    currentSetting,
+  });
 
   // Check LLM cache first
   const cachedStory = await getCached<CachedStoryResponse>("llm", llmCacheKey);
+  console.log("[LLM] Cache hit for story:", llmCacheKey);
 
   // Run Anthropic story generation AND action sound effect in parallel
   // Skip LLM call if we have cached response
@@ -81,7 +87,8 @@ export async function handleAction(
           model: anthropic("claude-sonnet-4-5-20250929"),
           schema: StorySchema,
           schemaName: "StoryResponse",
-          schemaDescription: "The story continuation with narrative, actions, and mood",
+          schemaDescription:
+            "The story continuation with narrative, actions, and mood",
           messages,
         }).then((r) => ({ ...r, cached: false })),
     generateActionSoundEffect(actionSoundPrompt),

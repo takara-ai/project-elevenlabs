@@ -90,7 +90,10 @@ export const useCameraStore = create<CameraState>((set, get) => ({
 
   addEffect: (effect, options) => {
     const { atIndex, topPriority } = options || {};
-    const effectWithPriority = { ...effect, topPriority: topPriority ?? effect.topPriority };
+    const effectWithPriority = {
+      ...effect,
+      topPriority: topPriority ?? effect.topPriority,
+    };
 
     set((state) => {
       let newEffects = [...state.activeEffects];
