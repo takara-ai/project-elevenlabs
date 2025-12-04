@@ -14,7 +14,7 @@ import { HistoryEntry } from "../state-management/states";
 
 const DISABLE_NARRATOR = process.env.DISABLE_NARRATOR === "true";
 
-export const StorySchema = z.object({
+const StorySchema = z.object({
   narrativeText: z
     .string()
     .describe("Narrator describes the scene (2-3 sentences)"),
