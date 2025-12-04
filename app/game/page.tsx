@@ -5,14 +5,46 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Prompt, SplashContainer, Title } from "../../components/splash";
 import { Scene } from "../_scene/scene";
 import { useGameStore, GamePhase } from "../lib/state-management/states";
+import { useCaptions } from "../lib/speech/captions";
 
 const FADE_DURATION_MS = 2000;
 const FADE_INTERVAL_MS = 50;
+const SUBTITLE_MAX_CHARS = 120;
+
+function Subtitles({ text }: { text: string }) {
+  // Show only the trailing portion of text with fade effect
+  const displayText = text.length > SUBTITLE_MAX_CHARS 
+    ? text.slice(-SUBTITLE_MAX_CHARS) 
+    : text;
+  
+  if (!displayText) return null;
+  
+  return (
+    <div className="absolute bottom-24 left-0 right-0 flex justify-center pointer-events-none z-40">
+      <div className="relative max-w-2xl px-8">
+        {/* Gradient fade on left edge for long text */}
+        {text.length > SUBTITLE_MAX_CHARS && (
+          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-black to-transparent z-10" />
+        )}
+        <p 
+          className="text-white/90 text-lg font-light tracking-wide text-center leading-relaxed"
+          style={{
+            textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 0 30px rgba(0,0,0,0.5)',
+          }}
+        >
+          {displayText}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const state = useGameStore();
   const phase = useGameStore((s) => s.phase);
   const soundstageUrl = useGameStore((s) => s.soundstageUrl);
+  const actionSoundUrl = useGameStore((s) => s.actionSoundUrl);
+  const currentStory = useGameStore((s) => s.currentStory);
 
   const [showSplash, setShowSplash] = useState(true);
   const [splashFading, setSplashFading] = useState(false);
@@ -24,6 +56,14 @@ export default function Home() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const soundstageRef = useRef<HTMLAudioElement | null>(null);
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastPlayedActionSoundRef = useRef<string | null>(null);
+  const narratorAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Synced captions for narrator voice
+  const { visibleText: captionText } = useCaptions(
+    currentStory?.alignment ?? null,
+    narratorAudioRef
+  );
 
   // Fade out background music smoothly
   const fadeOutBackgroundMusic = useCallback(() => {
@@ -96,6 +136,16 @@ export default function Home() {
     }
   }, [phase, soundstageUrl, soundstagePlaying, bgMusicFadingOut, fadeOutBackgroundMusic]);
 
+  // Play action sound effect when a new actionSoundUrl is set
+  useEffect(() => {
+    if (actionSoundUrl && actionSoundUrl !== lastPlayedActionSoundRef.current) {
+      lastPlayedActionSoundRef.current = actionSoundUrl;
+      const audio = new Audio(actionSoundUrl);
+      audio.volume = 0.45;
+      audio.play().catch(console.error);
+    }
+  }, [actionSoundUrl]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -130,6 +180,16 @@ export default function Home() {
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
       <audio ref={audioRef} src="/audio/background.mp3" loop />
 
+      {/* Narrator voice audio - hidden, auto-plays when story loads */}
+      {currentStory?.audioBase64 && (
+        <audio
+          ref={narratorAudioRef}
+          autoPlay
+          src={`data:audio/mpeg;base64,${currentStory.audioBase64}`}
+          className="hidden"
+        />
+      )}
+
       <div
         className={`h-full w-full transition-opacity duration-700 ease-out ${canvasVisible ? "opacity-100" : "opacity-0"
           }`}
@@ -140,21 +200,8 @@ export default function Home() {
         </Canvas>
       </div>
 
-      <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
-        <div className="absolute bottom-0 left-0 p-4 flex justify-center flex-col">
-          <pre className="p-4 bg-black/50 text-white max-w-sm max-h-80 text-xs overflow-x-auto">
-            {JSON.stringify(
-              {
-                progress: state.loadingProgress,
-                phase: state.phase,
-                historyLength: state.history.length,
-              },
-              null,
-              2
-            )}
-          </pre>
-        </div>
-      </div>
+      {/* Subtitles overlay */}
+      {phase === GamePhase.STORY && <Subtitles text={captionText} />}
 
       {showSplash && (
         <SplashContainer onClick={handleDismissSplash} fading={splashFading}>
