@@ -100,10 +100,10 @@ export function CurverLine({
   if (disabled) {
     return (
       <Line
-        scale={[1, Y_SCALE, 1]}
+        scale={[1, Y_SCALE / 2, 1]}
         points={points}
         worldUnits
-        color={"gray"}
+        color={"#222020"}
         lineWidth={LINE_WIDTH}
         renderOrder={1}
       />

@@ -9,6 +9,7 @@ import { useCameraStore } from "../store/camera";
 import { CurverLine, StraitLine } from "./line";
 import { TriggerCollider } from "./trigger-collider";
 import { useControls } from "leva";
+import { RandomSpheres } from "./random-spheres";
 
 const LINE_HEIGHT = 0.05;
 export const PHASE_HEIGHT = 12;
@@ -78,6 +79,15 @@ export function Phase({
             emissiveIntensity={1}
           />
         </mesh>
+        <RandomSpheres
+          count={10}
+          offset={add(offset, [0, 0, PHASE_HEIGHT / 2])}
+        />
+        <RandomSpheres
+          floored
+          count={10}
+          offset={add(offset, [0, 0, PHASE_HEIGHT / 2])}
+        />
         <TriggerCollider
           position={add(offset, [0, LINE_HEIGHT, PHASE_HEIGHT / 2])}
           size={[COLUMN_WIDTH * 4, 3, PHASE_HEIGHT]}
@@ -125,7 +135,15 @@ export function Phase({
           color={pointLightControls.color}
           castShadow={pointLightControls.castShadow}
         />
-
+        <RandomSpheres
+          count={10}
+          offset={add(offset, [0, 0, PHASE_HEIGHT / 2])}
+        />
+        <RandomSpheres
+          floored
+          count={10}
+          offset={add(offset, [0, 0, PHASE_HEIGHT / 2])}
+        />
         {/* Main story phase trigger - zooms camera when player enters */}
         <TriggerCollider
           position={add(offset, [0, LINE_HEIGHT, (3 * PHASE_HEIGHT) / 4])}
@@ -314,7 +332,7 @@ export function Phase({
           position={add(offset, [0, LINE_HEIGHT, PHASE_HEIGHT])}
         />
         <ActionText
-          text={"Make a choice..."}
+          text={"Something else..."}
           position={add(offset, [COLUMN_WIDTH, LINE_HEIGHT, PHASE_HEIGHT])}
         />
       </>
@@ -346,9 +364,9 @@ function ActionText({
 
   const lines = wrapText(text);
 
-  const LINE_HEIGHT = 0.24;
+  const LINE_HEIGHT = 0.28;
   const LINE_OFFSET = 0.6;
-  const FONT_SIZE = 0.2;
+  const FONT_SIZE = 0.25;
 
   return (
     <group>
