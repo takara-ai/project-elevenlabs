@@ -128,7 +128,7 @@ export function Phase({
     ]);
 
     // Trigger box size for option selection
-    const OPTION_TRIGGER_SIZE: [number, number, number] = [4, 3, 3];
+    const OPTION_TRIGGER_SIZE: [number, number, number] = [3.8, 3, 3];
 
     const lightPosition = add(offset, [0, 8, (3 * PHASE_HEIGHT) / 4]);
 

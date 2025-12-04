@@ -18,6 +18,11 @@ export interface CameraEffect {
    * Unique identifier for this effect
    */
   id: string;
+  /**
+   * If true, this effect will always be placed at the top (highest priority)
+   * and will override all other effects
+   */
+  topPriority?: boolean;
 }
 
 type CameraState = {
@@ -40,7 +45,10 @@ type CameraState = {
   /**
    * Add a camera effect
    */
-  addEffect: (effect: CameraEffect, atIndex?: number) => void;
+  addEffect: (
+    effect: CameraEffect,
+    options?: { atIndex?: number; topPriority?: boolean }
+  ) => void;
   /**
    * Remove a camera effect by id
    */
@@ -80,18 +88,33 @@ export const useCameraStore = create<CameraState>((set, get) => ({
   isControlled: false,
   autoscrollerZ: 0,
 
-  addEffect: (effect, atIndex) => {
-    if (atIndex !== undefined) {
-      set((state) => {
-        const newEffects = [...state.activeEffects];
-        newEffects.splice(atIndex, 0, effect);
-        return { activeEffects: newEffects };
-      });
-    } else {
-      set((state) => ({
-        activeEffects: [...state.activeEffects, effect],
-      }));
-    }
+  addEffect: (effect, options) => {
+    const { atIndex, topPriority } = options || {};
+    const effectWithPriority = { ...effect, topPriority: topPriority ?? effect.topPriority };
+
+    set((state) => {
+      let newEffects = [...state.activeEffects];
+
+      // Remove existing effect with same id if it exists
+      newEffects = newEffects.filter((e) => e.id !== effect.id);
+
+      if (atIndex !== undefined) {
+        newEffects.splice(atIndex, 0, effectWithPriority);
+      } else if (topPriority ?? effect.topPriority) {
+        // Add at the end (highest priority)
+        newEffects.push(effectWithPriority);
+      } else {
+        // Add at the end, but before any topPriority effects
+        const topPriorityIndex = newEffects.findIndex((e) => e.topPriority);
+        if (topPriorityIndex === -1) {
+          newEffects.push(effectWithPriority);
+        } else {
+          newEffects.splice(topPriorityIndex, 0, effectWithPriority);
+        }
+      }
+
+      return { activeEffects: newEffects };
+    });
   },
 
   removeEffect: (id) =>
