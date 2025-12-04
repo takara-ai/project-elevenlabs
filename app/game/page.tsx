@@ -1,12 +1,10 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
+import { useEffect, useRef, useState } from "react";
+import { Prompt, SplashContainer, Title } from "../../components/splash";
 import { Scene } from "../_scene/scene";
 import { useGameStore } from "../lib/state-management/states";
-import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { game } from "../lib/game/controller";
-import { SplashContainer, Title, Prompt } from "../../components/splash";
 
 export default function Home() {
   const state = useGameStore();
