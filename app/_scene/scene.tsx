@@ -16,6 +16,7 @@ import { Leva } from "leva";
 import { useSearchParams } from "next/navigation";
 import { OrderedDither } from "./components/shader/ordered-dither";
 import { OrderedDitherControls } from "./components/ordered-dither-controls";
+import { Tutorial } from "./components/tutorial";
 
 export function Scene() {
   const params = useSearchParams();
@@ -50,6 +51,7 @@ export function Scene() {
       <AutoScrollerTarget debug={!!params.get("debug")} />
       <Title3D />
       <Floor />
+      <Tutorial />
       <CursorPosition />
       <RandomSpheres count={scene.randomSpheresCount} />
       <History />

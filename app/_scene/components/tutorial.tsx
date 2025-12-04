@@ -2,10 +2,15 @@
 
 import { Text } from "@react-three/drei";
 
-export function Tutorial({ text }: { text: string }) {
+export function Tutorial() {
   return (
     <group>
-      <TutorialText text="Welcome to the tutorial!" position={[0, 0, 0]} />
+      <TutorialText
+        text="Choose a story genre to begin your adventure."
+        position={[0, 2, 10]}
+      />
+      <TutorialText text="Cody Adam & Jordan Legg" position={[0, 2, -4]} />
+      <TutorialText text="Present" position={[0, 2, -3.7]} />
     </group>
   );
 }

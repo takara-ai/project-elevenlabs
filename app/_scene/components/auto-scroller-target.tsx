@@ -7,7 +7,7 @@ import { useGameStore } from "@/app/lib/state-management/states";
 import { PHASE_HEIGHT, COLUMN_WIDTH } from "./phase";
 import { TOP_OFFSET } from "./history";
 
-const AUTOSCROLL_SPEED = 0.005; // Speed of autoscroll (units per frame)
+const AUTOSCROLL_SPEED = 0.01; // Speed of autoscroll (units per frame)
 const Z_OFFSET = 3;
 
 export function AutoScrollerTarget({ debug = false }: { debug?: boolean }) {
