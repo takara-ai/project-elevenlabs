@@ -41,6 +41,9 @@ export function Phase({
   >(choiceToOption(selectedChoice));
   const addEffect = useCameraStore((state) => state.addEffect);
   const removeEffect = useCameraStore((state) => state.removeEffect);
+  const setDefaultXPosition = useCameraStore(
+    (state) => state.setDefaultXPosition
+  );
   // Generate unique IDs for this phase's triggers
   const phaseId =
     phase.id + "-" + offset[0] + "-" + offset[1] + "-" + offset[2];
@@ -65,17 +68,14 @@ export function Phase({
           />
         </mesh>
         <TriggerCollider
-          position={add(offset, [
-            0,
-            LINE_HEIGHT,
-            PHASE_HEIGHT - BRANCH_HEIGHT / 2,
-          ])}
-          size={[COLUMN_WIDTH * 4, 3, BRANCH_HEIGHT + 4]}
+          position={add(offset, [0, LINE_HEIGHT, PHASE_HEIGHT / 2])}
+          size={[COLUMN_WIDTH * 4, 3, PHASE_HEIGHT]}
           id={phaseId}
           onEnter={() => {
+            setDefaultXPosition(offset[0]);
             addEffect({
               id: phaseId,
-              zoom: 0.6,
+              zoom: 1,
               smooth: true,
             });
           }}
@@ -105,29 +105,25 @@ export function Phase({
     return (
       <>
         {/* Main story phase trigger - zooms camera when player enters */}
-        {isCurrentPhase && (
-          <TriggerCollider
-            position={add(offset, [
-              0,
-              LINE_HEIGHT,
-              PHASE_HEIGHT - BRANCH_HEIGHT / 2,
-            ])}
-            size={[COLUMN_WIDTH * 4, 3, BRANCH_HEIGHT + 4]}
-            id={storyTriggerId}
-            onEnter={() => {
-              // Zoom camera when entering story phase
-              addEffect({
-                id: storyTriggerId,
-                zoom: 0.6,
-                smooth: true,
-              });
-            }}
-            onExit={() => {
-              // Remove zoom when exiting
-              removeEffect(storyTriggerId);
-            }}
-          />
-        )}
+        <TriggerCollider
+          position={add(offset, [0, LINE_HEIGHT, (3 * PHASE_HEIGHT) / 4])}
+          size={[COLUMN_WIDTH * 4, 3, PHASE_HEIGHT / 2]}
+          id={storyTriggerId}
+          onEnter={() => {
+            // Set default X position to offset X when entering
+            setDefaultXPosition(offset[0]);
+            // Zoom camera when entering story phase
+            addEffect({
+              id: storyTriggerId,
+              zoom: 0.6,
+              smooth: true,
+            });
+          }}
+          onExit={() => {
+            // Remove zoom when exiting
+            removeEffect(storyTriggerId);
+          }}
+        />
 
         {/* Left option trigger */}
         <TriggerCollider
@@ -142,6 +138,7 @@ export function Phase({
               targetPosition: leftOptionPos,
               smooth: true,
             });
+            setDefaultXPosition(leftOptionPos[0]);
             // Only update hover state if decision hasn't been taken
             if (selectedChoice === null) {
               setHoveredOption("left");

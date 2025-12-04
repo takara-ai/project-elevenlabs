@@ -12,6 +12,11 @@ export function Camera() {
   const cameraRef = React.useRef(camera);
   // Subscribe to active effects to trigger re-renders when they change
   const activeEffects = useCameraStore((state) => state.activeEffects);
+  const defaultXPosition = useCameraStore((state) => state.defaultXPosition);
+
+  const setDefaultXPosition = useCameraStore(
+    (state) => state.setDefaultXPosition
+  );
 
   const controls = useControls("Camera", {
     position: { value: [0, 5, 4], min: -50, max: 50, step: 0.1 },
@@ -24,6 +29,13 @@ export function Camera() {
     springStiffness: { value: 100, min: 0, max: 500, step: 1 },
     springDamping: { value: 30, min: 0, max: 100, step: 1 },
     springMass: { value: 1, min: 0.1, max: 10, step: 0.1 },
+    defaultXPosition: {
+      value: defaultXPosition,
+      min: -50,
+      max: 50,
+      step: 0.1,
+      onChange: (value) => setDefaultXPosition(value),
+    },
   });
 
   // Motion value for target z position
@@ -55,11 +67,18 @@ export function Camera() {
   React.useEffect(() => {
     if (!hasInitialized.current) {
       targetZ.set(controls.position[2]);
-      targetX.set(controls.position[0]);
+      targetX.set(defaultXPosition);
       targetZoom.set(controls.zoom);
       hasInitialized.current = true;
     }
-  }, [targetZ, targetX, targetZoom, controls.position, controls.zoom]);
+  }, [
+    targetZ,
+    targetX,
+    targetZoom,
+    controls.position,
+    controls.zoom,
+    defaultXPosition,
+  ]);
 
   // Update zoom and position based on camera store effects
   React.useEffect(() => {
@@ -78,10 +97,17 @@ export function Camera() {
       // Center camera X on the target position
       targetX.set(effectTargetPosition[0]);
     } else {
-      // Return to default X position
-      targetX.set(controls.position[0]);
+      // Return to default X position from store (when all effects are removed)
+      targetX.set(defaultXPosition);
     }
-  }, [activeEffects, controls.zoom, controls.position, targetZoom, targetX]);
+  }, [
+    activeEffects,
+    controls.zoom,
+    controls.position,
+    targetZoom,
+    targetX,
+    defaultXPosition,
+  ]);
 
   // Handle scroll wheel
   React.useEffect(() => {

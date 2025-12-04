@@ -26,6 +26,10 @@ type CameraState = {
    */
   activeEffects: CameraEffect[];
   /**
+   * Default X position to return to when all effects are removed
+   */
+  defaultXPosition: number;
+  /**
    * Add a camera effect
    */
   addEffect: (effect: CameraEffect) => void;
@@ -33,6 +37,10 @@ type CameraState = {
    * Remove a camera effect by id
    */
   removeEffect: (id: string) => void;
+  /**
+   * Set the default X position for when all effects are removed
+   */
+  setDefaultXPosition: (x: number) => void;
   /**
    * Get the current effective zoom (from the top effect)
    */
@@ -45,22 +53,25 @@ type CameraState = {
 
 export const useCameraStore = create<CameraState>((set, get) => ({
   activeEffects: [],
-  
+  defaultXPosition: 0,
+
   addEffect: (effect) =>
     set((state) => ({
       activeEffects: [...state.activeEffects, effect],
     })),
-  
+
   removeEffect: (id) =>
     set((state) => ({
       activeEffects: state.activeEffects.filter((e) => e.id !== id),
     })),
-  
+
+  setDefaultXPosition: (x) => set({ defaultXPosition: x }),
+
   getCurrentZoom: () => {
     const effects = get().activeEffects;
     return effects.length > 0 ? effects[effects.length - 1].zoom : undefined;
   },
-  
+
   getCurrentTargetPosition: () => {
     const effects = get().activeEffects;
     return effects.length > 0
@@ -107,4 +118,3 @@ export function useCameraZoomOnPosition(
     }
   }, [position, zoom, enabled, id, addEffect, removeEffect]);
 }
-
