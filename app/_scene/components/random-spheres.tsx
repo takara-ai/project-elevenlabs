@@ -43,14 +43,13 @@ export function RandomSpheres({
   // spreadDistance?: number;
   floored?: boolean;
 }) {
-  const { sphereRadius, sphereSegments, spreadDistance } = useControls(
-    "Random Spheres",
-    {
-      sphereRadius: { value: 0.05, min: 0.01, max: 2, step: 0.01 },
-      sphereSegments: { value: 24, min: 4, max: 64, step: 1 },
+  const { sphereRadius, sphereSegments, spreadDistance, emissiveIntensity } =
+    useControls("Random Spheres", {
+      sphereRadius: { value: 0.01, min: 0.001, max: 0.1, step: 0.001 },
+      sphereSegments: { value: 20, min: 4, max: 64, step: 1 },
       spreadDistance: { value: 2, min: 0.1, max: 10, step: 0.01 },
-    }
-  );
+      emissiveIntensity: { value: 2, min: 0, max: 5, step: 0.1 },
+    });
 
   // Stable random spheres using useMemo, so random is only called on first mount.
   const spheres = useMemo(
@@ -68,7 +67,11 @@ export function RandomSpheres({
           <sphereGeometry
             args={[sphereRadius, sphereSegments, sphereSegments]}
           />
-          <meshStandardMaterial color={color} />
+          <meshStandardMaterial
+            color={"#fff"}
+            emissive={"#fff"}
+            emissiveIntensity={emissiveIntensity}
+          />
         </mesh>
       ))}
     </>

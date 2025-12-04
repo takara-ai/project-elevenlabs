@@ -10,7 +10,7 @@ interface SubtitleLine {
 
 // Find the last sentence-ending punctuation
 function findSentenceEnd(text: string): number {
-  const endings = [". ", "! ", "? ", '."', '!"', '?"'];
+  const endings = [". ", "! ", "? ", '."', '!"', '?"', "…", "… "];
   let lastEnd = -1;
 
   for (const ending of endings) {

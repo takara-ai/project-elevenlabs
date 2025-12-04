@@ -12,8 +12,11 @@ import { RandomSpheres } from "./components/random-spheres";
 import { Title3D } from "./components/title";
 import { History } from "./components/history";
 import { AutoScrollerTarget } from "./components/auto-scroller-target";
+import { Leva } from "leva";
+import { useSearchParams } from "next/navigation";
 
 export function Scene() {
+  const params = useSearchParams();
   // Leva controls for scene parameters
   const lighting = useControls("Lighting", {
     ambientIntensity: { value: 1.5, min: 0, max: 5, step: 0.1 },
@@ -36,14 +39,13 @@ export function Scene() {
 
   const scene = useControls("Scene", {
     randomSpheresCount: { value: 20, min: 0, max: 100, step: 1 },
-    showAutoscrollerDebug: { value: true, label: "Show Autoscroller Debug" },
   });
 
   return (
     <>
       <ambientLight intensity={lighting.ambientIntensity} />
       <Camera />
-      <AutoScrollerTarget debug={scene.showAutoscrollerDebug} />
+      <AutoScrollerTarget debug={!!params.get("debug")} />
       <Title3D />
       <Floor />
       <CursorPosition />
