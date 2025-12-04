@@ -3,6 +3,8 @@
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Prompt, SplashContainer, Title } from "../../components/splash";
+import { Subtitles } from "../../components/subtitles";
+import { TriggerOverlay } from "../../components/trigger-overlay";
 import { Scene } from "../_scene/scene";
 import { useGameStore, GamePhase } from "../lib/state-management/states";
 import { useCaptions } from "../lib/speech/captions";
@@ -11,135 +13,6 @@ import { AutoscrollButton } from "../_scene/components/autoscroll-button";
 
 const FADE_DURATION_MS = 2000;
 const FADE_INTERVAL_MS = 50;
-
-interface SubtitleLine {
-  text: string;
-  id: number;
-  fading: boolean;
-}
-
-// Find the last sentence-ending punctuation
-function findSentenceEnd(text: string): number {
-  const endings = [". ", "! ", "? ", '."', '!"', '?"'];
-  let lastEnd = -1;
-
-  for (const ending of endings) {
-    const idx = text.lastIndexOf(ending);
-    if (idx > lastEnd) {
-      lastEnd = idx + ending.length - 1; // Include the punctuation, not the space after
-    }
-  }
-
-  // Also check for end of string punctuation
-  if (text.endsWith(".") || text.endsWith("!") || text.endsWith("?")) {
-    return text.length;
-  }
-
-  return lastEnd;
-}
-
-function Subtitles({ text }: { text: string }) {
-  const [lines, setLines] = useState<SubtitleLine[]>([]);
-  const lineIdRef = useRef(0);
-  const prevTextRef = useRef("");
-
-  useEffect(() => {
-    // Reset on new story (text got shorter)
-    if (text.length < prevTextRef.current.length) {
-      setLines([]);
-      lineIdRef.current = 0;
-      prevTextRef.current = text;
-      return;
-    }
-
-    // Get only the new portion of text
-    const newText = text.slice(prevTextRef.current.length);
-    prevTextRef.current = text;
-
-    if (!newText) return;
-
-    setLines((prev) => {
-      // Find current active line index
-      const activeIdx = prev.findIndex((l) => !l.fading);
-      const activeLine = activeIdx >= 0 ? prev[activeIdx] : null;
-
-      // Build combined text
-      const combined = (activeLine?.text || "") + newText;
-
-      // Check if we have a complete sentence
-      const sentenceEnd = findSentenceEnd(combined);
-
-      if (sentenceEnd > 0 && sentenceEnd < combined.length) {
-        // Complete sentence followed by more text - split it
-        const completedText = combined.slice(0, sentenceEnd).trim();
-        const remainder = combined.slice(sentenceEnd).trim();
-
-        // Create new array with updated lines
-        const newLines: SubtitleLine[] = [];
-
-        // Add fading lines (keep only most recent)
-        const fadingLines = prev.filter((l) => l.fading);
-        if (fadingLines.length > 0) {
-          newLines.push(fadingLines[fadingLines.length - 1]);
-        }
-
-        // Add the completed sentence as fading
-        newLines.push({
-          text: completedText,
-          id: activeLine?.id ?? lineIdRef.current++,
-          fading: true,
-        });
-
-        // Add the new sentence
-        if (remainder) {
-          newLines.push({
-            text: remainder,
-            id: lineIdRef.current++,
-            fading: false,
-          });
-        }
-
-        // Keep max 2 lines
-        return newLines.slice(-2);
-      } else {
-        // No sentence break - just update the active line
-        if (activeLine) {
-          return prev.map((l) =>
-            l.id === activeLine.id ? { ...l, text: combined } : l
-          );
-        } else {
-          // No active line, create one
-          return [
-            ...prev,
-            { text: combined, id: lineIdRef.current++, fading: false },
-          ].slice(-2);
-        }
-      }
-    });
-  }, [text]);
-
-  if (lines.length === 0) return null;
-
-  return (
-    <div className="absolute bottom-20 left-0 right-0 flex flex-col pointer-events-none z-40 gap-2">
-      {lines.map((line) => (
-        <div
-          key={line.id}
-          className={`transition-opacity duration-500 ease-out ${
-            line.fading ? "opacity-50" : "opacity-100"
-          }`}
-        >
-          <p
-            className="text-white text-xl font-medium tracking-wide leading-relaxed px-8 py-4 rounded-lg max-w-3xl"
-            style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
-          >
-            {line.text}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function Home() {
   const phase = useGameStore((s) => s.phase);
@@ -336,12 +209,8 @@ export default function Home() {
       <AutoscrollButton />
 
       {/* Trigger UI overlay */}
-      {triggerActive && !showSplash && (
-        <div className="absolute top-12 left-0 right-0 flex justify-center pointer-events-none z-50">
-          <p className="text-white bg-black/50 p-4 text-5xl font-semibold text-center">
-            {triggerLabel || "Click to interact"}
-          </p>
-        </div>
+      {!showSplash && (
+        <TriggerOverlay isActive={triggerActive} label={triggerLabel} />
       )}
 
       {showSplash && (
